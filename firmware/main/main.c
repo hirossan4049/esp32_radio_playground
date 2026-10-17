@@ -396,7 +396,10 @@ static void cstream(uint32_t decim, uint32_t nout, uint32_t shift, bool to_usb)
             }
             rp += decim;
             int32_t iv = ((int32_t)a - 512 * (int32_t)decim) >> shift, qv = ((int32_t)(b >> 10) - 512 * (int32_t)decim) >> shift;
-            if (iv > 127) iv = 127; if (iv < -128) iv = -128; if (qv > 127) qv = 127; if (qv < -128) qv = -128;
+            if (iv > 127) iv = 127;
+            if (iv < -128) iv = -128;
+            if (qv > 127) qv = 127;
+            if (qv < -128) qv = -128;
             if (to_usb) {
                 usbbuf[usbn++] = (uint8_t)iv; usbbuf[usbn++] = (uint8_t)qv;
                 if (usbn == 64) {
