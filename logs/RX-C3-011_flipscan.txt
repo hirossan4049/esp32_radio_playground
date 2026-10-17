@@ -1,1 +1,91 @@
 START 19:14:59
+blk 62 reg 0 bit0 a8->a9: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 38
+blk 62 reg 0 bit1 a8->aa: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 32
+blk 62 reg 0 bit2 a8->ac: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 33
+blk 62 reg 0 bit3 a8->a0: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 31
+blk 62 reg 0 bit4 a8->b8: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 31
+blk 62 reg 0 bit5 a8->88: marker(+3MHz at 40k+3) 1/16  best r=1/7 1/10  dead=0  istd med 37
+blk 62 reg 0 bit6 a8->e8: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 33
+blk 62 reg 0 bit7 a8->28: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 31
+blk 62 reg 1 bit0 ca->cb: marker(+3MHz at 40k+3) 14/16  best r=1 14/16  dead=0  istd med 35
+blk 62 reg 1 bit1 ca->c8: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 31
+blk 62 reg 1 bit2 ca->ce: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 27
+blk 62 reg 1 bit3 ca->c2: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 31
+blk 62 reg 1 bit4 ca->da: marker(+3MHz at 40k+3) 0/16  best r=7/11 1/10  dead=0  istd med 30
+blk 62 reg 1 bit5 ca->ea: marker(+3MHz at 40k+3) 0/16  best r=1/10 1/9  dead=0  istd med 30
+blk 62 reg 1 bit6 ca->8a: marker(+3MHz at 40k+3) 0/16  best r=13/10 2/10  dead=0  istd med 36
+blk 62 reg 1 bit7 ca->4a: marker(+3MHz at 40k+3) 1/16  best r=13/11 2/12  dead=0  istd med 39
+blk 62 reg 2 bit0 87->86: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 32
+blk 62 reg 2 bit1 87->85: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 33
+blk 62 reg 2 bit2 87->83: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 29
+blk 62 reg 2 bit3 87->8f: marker(+3MHz at 40k+3) 7/16  best r=1 5/16  dead=0  istd med 33
+blk 62 reg 2 bit4 87->97: marker(+3MHz at 40k+3) 0/16  best r=1/9 1/8  dead=0  istd med 28
+blk 62 reg 2 bit5 87->a7: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 27
+blk 62 reg 2 bit6 87->c7: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 30
+blk 62 reg 2 bit7 87->07: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 26
+blk 62 reg 3 bit0 7f->7e: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 31
+blk 62 reg 3 bit1 7f->7d: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 31
+blk 62 reg 3 bit2 7f->7b: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 32
+blk 62 reg 3 bit3 7f->77: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 32
+blk 62 reg 3 bit4 7f->6f: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 29
+blk 62 reg 3 bit5 7f->5f: marker(+3MHz at 40k+3) 0/16  best r=1/10 0/9  dead=0  istd med 61
+blk 62 reg 3 bit6 7f->3f: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 28
+blk 62 reg 3 bit7 7f->ff: marker(+3MHz at 40k+3) 14/16  best r=1 14/16  dead=0  istd med 29
+blk 62 reg 4 bit0 3f->3e: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 34
+blk 62 reg 4 bit1 3f->3d: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 29
+blk 62 reg 4 bit2 3f->3b: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 30
+blk 62 reg 4 bit3 3f->37: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 32
+blk 62 reg 4 bit4 3f->2f: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 30
+blk 62 reg 4 bit5 3f->1f: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 30
+blk 62 reg 4 bit6 3f->7f: marker(+3MHz at 40k+3) 12/16  best r=1 9/16  dead=0  istd med 28
+blk 62 reg 4 bit7 3f->bf: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 31
+blk 62 reg 5 bit0 ca->cb: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 33
+blk 62 reg 5 bit1 ca->c8: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 32
+blk 62 reg 5 bit2 ca->ce: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 31
+blk 62 reg 5 bit3 ca->c2: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 31
+blk 62 reg 5 bit4 ca->da: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 31
+blk 62 reg 5 bit5 ca->ea: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 26
+blk 62 reg 5 bit6 ca->8a: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 29
+blk 62 reg 5 bit7 ca->4a: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 31
+blk 62 reg 6 bit0 07->06: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 32
+blk 62 reg 6 bit1 07->05: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 27
+blk 62 reg 6 bit2 07->03: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 31
+blk 62 reg 6 bit3 07->0f: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 33
+blk 62 reg 6 bit4 07->17: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 32
+blk 62 reg 6 bit5 07->27: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 37
+blk 62 reg 6 bit6 07->47: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 30
+blk 62 reg 6 bit7 07->87: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 32
+blk 62 reg 7 bit0 03->02: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 32
+blk 62 reg 7 bit1 03->01: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 31
+blk 62 reg 7 bit2 03->07: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 31
+blk 62 reg 7 bit3 03->0b: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 33
+blk 62 reg 7 bit4 03->13: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 32
+blk 62 reg 7 bit5 03->23: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 30
+blk 62 reg 7 bit6 03->43: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 32
+blk 62 reg 7 bit7 03->83: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 33
+blk 62 reg 8 bit0 00->01: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 32
+blk 62 reg 8 bit1 00->02: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 32
+blk 62 reg 8 bit2 00->04: marker(+3MHz at 40k+3) 10/16  best r=1 8/16  dead=0  istd med 32
+blk 62 reg 8 bit3 00->08: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 30
+blk 62 reg 8 bit4 00->10: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 30
+blk 62 reg 8 bit5 00->20: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 32
+blk 62 reg 8 bit6 00->40: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 30
+blk 62 reg 8 bit7 00->80: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 29
+blk 62 reg 9 bit0 02->03: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 29
+blk 62 reg 9 bit1 02->00: marker(+3MHz at 40k+3) 12/16  best r=1 9/16  dead=0  istd med 32
+blk 62 reg 9 bit2 02->06: marker(+3MHz at 40k+3) 14/16  best r=1 14/16  dead=0  istd med 29
+blk 62 reg 9 bit3 02->0a: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 32
+blk 62 reg 9 bit4 02->12: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 28
+blk 62 reg 9 bit5 02->22: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 30
+blk 62 reg 9 bit6 02->42: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 27
+blk 62 reg 9 bit7 02->82: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 31
+blk 62 reg10 bit0 f0->f1: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 28
+blk 62 reg10 bit1 f0->f2: marker(+3MHz at 40k+3) 14/16  best r=1 14/16  dead=0  istd med 33
+blk 62 reg10 bit2 f0->f4: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 35
+blk 62 reg10 bit3 f0->f8: marker(+3MHz at 40k+3) 15/16  best r=1 14/16  dead=0  istd med 30
+blk 62 reg10 bit4 f0->e0: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 34
+blk 62 reg10 bit5 f0->d0: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 32
+blk 62 reg10 bit6 f0->b0: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 28
+blk 62 reg10 bit7 f0->70: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 34
+blk 62 reg11 bit0 68->69: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 31
+blk 62
