@@ -120,7 +120,8 @@ static void rx_mode(unsigned gain)
 
 static bool tune(uint32_t fkhz)
 {
-    if (fkhz < 2200000 || fkhz > 2800000) return false;
+    /* Wide request window for lock-range mapping; the PHY decides what locks. Receive only. */
+    if (fkhz < 1500000 || fkhz > 3500000) return false;
     int ch = ((int)fkhz - 2407000 + 2500) / 5000;
     ch = ch < 1 ? 1 : ch > 13 ? 13 : ch;
     unsigned mhz = fkhz / 1000;
@@ -199,7 +200,7 @@ static void handle(char *line)
             ci.model, ci.revision, CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ, tuned_khz, rd(DUMP_CTRL), rd(DUMP_WIDX), rd(SRAM_OWNER), rd(AGC_FORCE));
     } else if (!strcmp(cmd, "TUNE")) {
         uint32_t k = s ? strtoul(s, NULL, 10) : 0;
-        if (!tune(k)) say("ERR TUNE range 2200000..2800000 kHz\r\n");
+        if (!tune(k)) say("ERR TUNE range 1500000..3500000 kHz\r\n");
     } else if (!strcmp(cmd, "GAIN")) {
         set_gain(s ? strtoul(s, NULL, 10) : 40);
     } else if (!strcmp(cmd, "RXMODE")) {

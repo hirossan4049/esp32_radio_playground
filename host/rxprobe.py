@@ -130,5 +130,102 @@ def main():
     print(meta["raw_status"])
     if args.analyze: analyze(args.out)
 
-if __name__ == "__main__":
+if __name__ == "__main__" and not (len(sys.argv) > 1 and sys.argv[1] in ("sweep", "lockscan")):
     main()
+
+# ---------------------------------------------------------------- sweep
+def psd_db(words, nfft=1024):
+    import numpy as np
+    i = ((words & 1023) ^ 512).astype(np.float64) - 512
+    q = (((words >> 10) & 1023) ^ 512).astype(np.float64) - 512
+    x = (i - i.mean()) + 1j * (q - q.mean())
+    nseg = len(x) // nfft
+    w = np.hanning(nfft)
+    acc = np.zeros(nfft)
+    for k in range(nseg):
+        X = np.fft.fft(x[k * nfft:(k + 1) * nfft] * w)
+        acc += np.abs(X) ** 2
+    P = 10 * np.log10(acc / nseg + 1e-9)
+    return np.fft.fftshift(P)
+
+def peaks(P, f, thresh_db=8.0, maxn=10):
+    import numpy as np
+    med = np.median(P)
+    idx = [k for k in np.argsort(P)[::-1] if P[k] - med > thresh_db]
+    out = []
+    for k in idx:
+        if all(abs(f[k] - f[j]) > 3 * (f[1] - f[0]) for j, _ in out):
+            out.append((k, P[k] - med))
+        if len(out) >= maxn:
+            break
+    return out
+
+def sweep(port, los_khz, ctrl, n, fs, tag, selector=True):
+    import numpy as np
+    s = open_port(port)
+    table = []
+    for lo in los_khz:
+        r = cmd(s, f"TUNE {lo}")
+        if selector:
+            cmd(s, "WR 60033d90 000c2040")
+        data, meta = capture(s, ctrl, n)
+        path = f"captures/{tag}_lo{lo}.bin"
+        open(path, "wb").write(data)
+        meta["lo_khz"] = lo; meta["fs"] = fs; meta["tune_reply"] = r.strip()
+        json.dump(meta, open(path + ".json", "w"), indent=1)
+        words = np.frombuffer(data, dtype="<u4")
+        P = psd_db(words)
+        f = np.fft.fftshift(np.fft.fftfreq(len(P), 1 / fs))
+        pk = peaks(P, f)
+        print(f"LO {lo/1000:.3f} MHz  {meta.get('cycles')} cyc  I/Q std {words.size}w  median {np.median(P):.1f} dB  | {r.strip().splitlines()[-1] if r.strip() else ''}")
+        for k, d in pk:
+            off = f[k]
+            print(f"    offset {off/1e6:+8.3f} MHz  {d:5.1f} dB   -> RF if LO-RF: {lo/1e3 - off/1e6:9.3f} MHz   RF if RF-LO: {lo/1e3 + off/1e6:9.3f} MHz")
+        table.append((lo, [(f[k], d) for k, d in pk]))
+    return table
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "sweep":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("sweep"); ap.add_argument("--port", default=PORT)
+    ap.add_argument("--los", default="2430000,2435000,2437000,2440000,2445000,2450000,2460000")
+    ap.add_argument("--ctrl", default="13fff"); ap.add_argument("--n", type=int, default=16384)
+    ap.add_argument("--fs", type=float, default=16e6); ap.add_argument("--tag", default="sweep")
+    a = ap.parse_args()
+    sweep(a.port, [int(x) for x in a.los.split(",")], int(a.ctrl, 16), a.n, a.fs, a.tag)
+    sys.exit(0)
+
+# ---------------------------------------------------------------- lockscan
+def lockscan(port, lo_list_khz, marker_off_hz, ctrl=0x13fff, n=16384, fs=16e6, tag="lockscan"):
+    """Tune to each LO, capture, and report the PSD level at a fixed baseband offset where an
+    internal spur (40 MHz crystal harmonic at RF = LO - marker_off) should appear if the LO is real."""
+    import numpy as np
+    s = open_port(port)
+    rows = []
+    for lo in lo_list_khz:
+        r = cmd(s, f"TUNE {lo}").strip().splitlines()
+        r = r[-1] if r else ""
+        cmd(s, "WR 60033d90 000c2040")
+        try:
+            data, meta = capture(s, ctrl, n)
+        except Exception as e:
+            print(f"LO {lo/1000:9.3f} MHz  capture failed: {e}"); continue
+        words = np.frombuffer(data, dtype="<u4")
+        path = f"captures/{tag}_lo{lo}.bin"; open(path, "wb").write(data)
+        meta["lo_khz"] = lo; meta["tune_reply"] = r; json.dump(meta, open(path + ".json", "w"), indent=1)
+        P = psd_db(words); f = np.fft.fftshift(np.fft.fftfreq(len(P), 1 / fs)); med = np.median(P)
+        k = int(np.argmin(np.abs(f - marker_off_hz)))
+        local = P[max(0, k - 2):k + 3].max() - med
+        i = ((words & 1023) ^ 512).astype(np.float64) - 512
+        best = max(((P[j] - med, f[j]) for j in range(len(P)) if abs(f[j]) > 0.1e6), key=lambda t: t[0])
+        rows.append((lo, local, best, i.std(), r))
+        print(f"LO {lo/1000:9.3f} MHz  marker@{marker_off_hz/1e6:+.1f}MHz {local:5.1f} dB  strongest {best[0]:5.1f} dB @ {best[1]/1e6:+7.3f} MHz  I std {i.std():6.1f}  | {r}")
+    return rows
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "lockscan":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("lockscan"); ap.add_argument("--port", default=PORT)
+    ap.add_argument("--start", type=int, default=2203000); ap.add_argument("--stop", type=int, default=2883000); ap.add_argument("--step", type=int, default=40000)
+    ap.add_argument("--marker", type=float, default=-3e6); ap.add_argument("--tag", default="lockscan")
+    a = ap.parse_args()
+    lockscan(a.port, list(range(a.start, a.stop + 1, a.step)), a.marker, tag=a.tag)
+    sys.exit(0)
