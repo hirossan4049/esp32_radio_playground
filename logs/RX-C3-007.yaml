@@ -1,0 +1,13 @@
+experiment_id: RX-C3-007
+title: Conversion-ratio fit of candidate CKGEN values using PLL sweep and the 40 MHz comb
+date: 2026-10-17
+board: unknown ESP32-C3 dev board, PCB antenna
+soc: ESP32-C3
+revision: v0.4
+firmware_commit: 6ddf3e0
+esp_idf_version: v5.2.1
+rx_method: wifi_rf_iq_dump, 16 Msps, PLL 2203..2803 MHz step 5 MHz per CKGEN value
+rf_input_mhz: internal 40 MHz harmonics
+capture_path: logs/RX-C3-007_ratio_ck73.json, ck67.json, ck43.json, ck23.json
+control_result: positive control 0x73 fits r=5/6 (11/46 lines), no other ratio above 7%
+interpretation: 0x67, 0x43 and 0x23 show no alternate conversion ratio; no lower LO mode found in CKGEN single-bit space
