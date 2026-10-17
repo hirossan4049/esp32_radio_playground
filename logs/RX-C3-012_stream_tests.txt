@@ -1,0 +1,86 @@
+scan finished 19:24:31; flashing CSTREAM build
+3
+=== RX-C3-012a: buffered on-chip stream, decim 16 (1 MS/s), LO 2437 ===
+CSTREAM decim=16 shift=4 produced=40960 blocks=40 cycles=7588542 late=0 waits=304 maxlag=2697 restart_avg=81 restart_max=784 usb_dropped=0 tuned=2437000
+saved 81920 bytes = 40960 samples at 1000.0 kS/s (41.0 ms)
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 83, in <module>
+    if args.mode == "buf": buf(args)
+                           ^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 35, in buf
+    if args.analyze: analyze_file(args.out, 16e6 / args.decim)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 59, in analyze_file
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+=== decim 32 (500 kS/s) ===
+CSTREAM decim=32 shift=5 produced=40960 blocks=80 cycles=13136482 late=0 waits=46160 maxlag=37 restart_avg=63 restart_max=63 usb_dropped=0 tuned=2437000
+saved 81920 bytes = 40960 samples at 500.0 kS/s (81.9 ms)
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 83, in <module>
+    if args.mode == "buf": buf(args)
+                           ^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 35, in buf
+    if args.analyze: analyze_file(args.out, 16e6 / args.decim)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 59, in analyze_file
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+=== decim 16 at LO 2300 (quiet) ===
+OK TUNE 2300000 kHz chan 1 pll 2299999695 Hz
+CSTREAM decim=16 shift=4 produced=40960 blocks=40 cycles=7584141 late=0 waits=314 maxlag=2410 restart_avg=63 restart_max=63 usb_dropped=0 tuned=2300000
+saved 81920 bytes = 40960 samples at 1000.0 kS/s (41.0 ms)
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 83, in <module>
+    if args.mode == "buf": buf(args)
+                           ^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 35, in buf
+    if args.analyze: analyze_file(args.out, 16e6 / args.decim)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 59, in analyze_file
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+=== RX-C3-012b: USB continuous, decim 64 (250 kS/s), 5 s, LO 2437 ===
+OK TUNE 2437000 kHz chan 6 pll 2436999664 Hz
+CSTREAM start decim=64 shift=6 fmt=int8 usb
+(no status line)
+received 2425852 bytes in 5.5 s = 438.4 kB/s = 219.2 kS/s (expected 250.0 kS/s)
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 84, in <module>
+    elif args.mode == "usb": usb(args)
+                             ^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 56, in usb
+    if args.analyze: analyze_file(args.out, 16e6 / args.decim)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 59, in analyze_file
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+=== USB continuous, decim 32 (500 kS/s), 3 s ===
+CSTREAM start decim=32 shift=5 fmt=int8 usb
+(no status line)
+received 2556924 bytes in 3.5 s = 726.7 kB/s = 363.4 kS/s (expected 500.0 kS/s)
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 84, in <module>
+    elif args.mode == "usb": usb(args)
+                             ^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 56, in usb
+    if args.analyze: analyze_file(args.out, 16e6 / args.decim)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 59, in analyze_file
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+=== USB continuous, decim 16 (1 MS/s), 3 s ===
+CSTREAM start decim=16 shift=4 fmt=int8 usb
+(no status line)
+received 2229244 bytes in 3.5 s = 634.3 kB/s = 317.1 kS/s (expected 1000.0 kS/s)
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 84, in <module>
+    elif args.mode == "usb": usb(args)
+                             ^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 56, in usb
+    if args.analyze: analyze_file(args.out, 16e6 / args.decim)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/cstream.py", line 59, in analyze_file
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+TESTS DONE 19:25:29

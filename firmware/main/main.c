@@ -49,6 +49,7 @@ SOC_RESERVE_MEMORY_REGION(0x3fca0000, 0x3fcc0000, c3_rf_dump);
 #define AGC_FORCE   0x6001C02Cu
 #define DUMP_BANK   ((volatile uint32_t *)0x3fcb0000)
 #define DUMP_BANK_WORDS 16384u
+static uint32_t own_bit3 = 8u;   /* OWNBIT3 0 clears the bit-3 handoff in every start sequence */
 
 extern void stop_tx_tone(unsigned);
 extern void rom_pbus_workmode(void);
@@ -154,7 +155,7 @@ static void capture(uint32_t ctrl, uint32_t nwords)
     wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
     wr(DUMP_CTRL, ctrl & ~(1u << 31));
     wr(SRAM_OWNER, (owner0 & ~7u) | 2u);
-    wr(SRAM_OWNER, rd(SRAM_OWNER) | 8u);
+    wr(SRAM_OWNER, rd(SRAM_OWNER) | own_bit3);
     __asm__ volatile("fence rw,rw" ::: "memory");
     const uint32_t owner_set = rd(SRAM_OWNER);
     uint32_t widx0 = rd(DUMP_WIDX);
@@ -197,7 +198,7 @@ static void ring_probe(uint32_t ctrl, uint32_t total_us)
     wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
     wr(DUMP_CTRL, ctrl & ~(1u << 31));
     wr(SRAM_OWNER, (owner0 & ~7u) | 2u);
-    wr(SRAM_OWNER, rd(SRAM_OWNER) | 8u);
+    wr(SRAM_OWNER, rd(SRAM_OWNER) | own_bit3);
     __asm__ volatile("fence rw,rw" ::: "memory");
     uint32_t t0 = esp_cpu_get_cycle_count();
     wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 31));
@@ -242,7 +243,7 @@ static void stream_decimate(uint32_t ctrl, uint32_t ring_words, uint32_t decim, 
     wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
     wr(DUMP_CTRL, ctrl & ~(1u << 31));
     wr(SRAM_OWNER, (owner0 & ~7u) | 2u);
-    wr(SRAM_OWNER, rd(SRAM_OWNER) | 8u);
+    wr(SRAM_OWNER, rd(SRAM_OWNER) | own_bit3);
     __asm__ volatile("fence rw,rw" ::: "memory");
     uint32_t overruns = 0, waits = 0, produced = 0, rp = 0, maxlag = 0;
     portDISABLE_INTERRUPTS();
@@ -297,7 +298,7 @@ static void bank_probe(uint32_t sel, uint32_t ctrl)
     wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
     wr(DUMP_CTRL, ctrl & ~(1u << 31));
     wr(SRAM_OWNER, (owner0 & ~7u) | (sel & 7u));
-    wr(SRAM_OWNER, rd(SRAM_OWNER) | 8u);
+    wr(SRAM_OWNER, rd(SRAM_OWNER) | own_bit3);
     __asm__ volatile("fence rw,rw" ::: "memory");
     uint32_t own = rd(SRAM_OWNER);
     uint32_t t0 = esp_cpu_get_cycle_count();
@@ -371,7 +372,7 @@ static void cstream(uint32_t decim, uint32_t nout, uint32_t shift, bool to_usb)
     const uint32_t owner0 = rd(SRAM_OWNER);
     wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
     wr(SRAM_OWNER, (owner0 & ~7u) | 2u);
-    wr(SRAM_OWNER, rd(SRAM_OWNER) | 8u);
+    wr(SRAM_OWNER, rd(SRAM_OWNER) | own_bit3);
     __asm__ volatile("fence rw,rw" ::: "memory");
     uint32_t produced = 0, blocks = 0, late = 0, maxlag = 0, restart_cycles_sum = 0, restart_cycles_max = 0, waits = 0;
     bool stop = false;
@@ -518,6 +519,8 @@ static void handle(char *line)
     } else if (!strcmp(cmd, "USTREAM")) {
         char *a = strsep(&s, " "); char *c = s;
         cstream(a ? strtoul(a, NULL, 10) : 64, 0, c ? strtoul(c, NULL, 10) : 6, true);
+    } else if (!strcmp(cmd, "OWNBIT3")) {
+        own_bit3 = (s && *s == '0') ? 0u : 8u; say("OK OWNBIT3 %u\r\n", (unsigned)(own_bit3 ? 1 : 0));
     } else if (!strcmp(cmd, "OWN")) {
         say("OWN %08" PRIx32 "\r\n", rd(SRAM_OWNER));
     } else {
