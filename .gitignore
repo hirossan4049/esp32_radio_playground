@@ -1,0 +1,8 @@
+logs/*.bin
+logs/*.iq
+logs/*.raw
+captures/
+build/
+sdkconfig.old
+*.pyc
+.DS_Store
