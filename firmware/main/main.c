@@ -443,6 +443,79 @@ static void cstream(uint32_t decim, uint32_t nout, uint32_t shift, bool to_usb)
     }
 }
 
+/* RING2 <owner_low4>: start a one-shot into the bank selected by the owner bits (2 -> A at
+ * 0x3FCA0000, 0xA -> B at 0x3FCB0000) and, while it runs, read words from BOTH banks twice to
+ * see which bank the CPU can read live (varying values) and which returns a constant. */
+static void ring2(uint32_t ownbits)
+{
+    for (uint32_t i = 0; i < DUMP_BANK_WORDS; i++) { DUMP_BANK[i] = 0xDEADBEEFu; DUMP_BANK_A[i] = 0xDEADBEEFu; }
+    const uint32_t owner0 = rd(SRAM_OWNER);
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    wr(DUMP_CTRL, 0x13fffu);
+    wr(SRAM_OWNER, (owner0 & ~0xFu) | (ownbits & 0xFu));
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    uint32_t a1[4], b1[4], a2[4], b2[4], w1, w2;
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 31));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 19));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 19));
+    esp_rom_delay_us(300);
+    w1 = rd(DUMP_WIDX);
+    for (int j = 0; j < 4; j++) { a1[j] = DUMP_BANK_A[j * 1000]; b1[j] = DUMP_BANK[j * 1000]; }
+    esp_rom_delay_us(300);
+    w2 = rd(DUMP_WIDX);
+    for (int j = 0; j < 4; j++) { a2[j] = DUMP_BANK_A[j * 1000]; b2[j] = DUMP_BANK[j * 1000]; }
+    esp_rom_delay_us(1500);
+    uint32_t st = rd(DUMP_CTRL);
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    wr(SRAM_OWNER, owner0);
+    uint32_t ua = 0, ub = 0;
+    for (uint32_t i = 0; i < DUMP_BANK_WORDS; i++) { if (DUMP_BANK_A[i] == 0xDEADBEEFu) ua++; if (DUMP_BANK[i] == 0xDEADBEEFu) ub++; }
+    say("RING2 own=%" PRIx32 " status=%08" PRIx32 " widx@300us=%08" PRIx32 " @600us=%08" PRIx32 " unwrittenA=%" PRIu32 " unwrittenB=%" PRIu32 "\r\n", ownbits, st, w1, w2, ua, ub);
+    say("  live A@300: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "  A@600: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "\r\n", a1[0], a1[1], a1[2], a1[3], a2[0], a2[1], a2[2], a2[3]);
+    say("  live B@300: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "  B@600: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "\r\n", b1[0], b1[1], b1[2], b1[3], b2[0], b2[1], b2[2], b2[3]);
+    say("  final A[0,1000,2000,3000]: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "  B: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "\r\nEND\r\n",
+        DUMP_BANK_A[0], DUMP_BANK_A[1000], DUMP_BANK_A[2000], DUMP_BANK_A[3000], DUMP_BANK[0], DUMP_BANK[1000], DUMP_BANK[2000], DUMP_BANK[3000]);
+}
+
+/* RING3: capture into A (owner 2), finish; then switch to B (owner 0xA), start, and while B is
+ * being written read A: does the CPU see A's fresh data while the engine owns the pair? */
+static void ring3(void)
+{
+    for (uint32_t i = 0; i < DUMP_BANK_WORDS; i++) { DUMP_BANK[i] = 0xDEADBEEFu; DUMP_BANK_A[i] = 0xDEADBEEFu; }
+    const uint32_t owner0 = rd(SRAM_OWNER);
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31)); wr(DUMP_CTRL, 0x13fffu);
+    wr(SRAM_OWNER, (owner0 & ~0xFu) | 2u);
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 31)); wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 19)); wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 19));
+    uint32_t st = 0; for (uint32_t i = 0; i < 2000000; i++) { st = rd(DUMP_CTRL); if (st & (1u << 18)) break; }
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    uint32_t a_owned[4]; for (int j = 0; j < 4; j++) a_owned[j] = DUMP_BANK_A[j * 1000];      /* A read while still owned (idle engine) */
+    /* now B */
+    wr(DUMP_CTRL, 0x13fffu);
+    wr(SRAM_OWNER, (rd(SRAM_OWNER) & ~0xFu) | 0xAu);
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    uint32_t t0 = esp_cpu_get_cycle_count();
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 31)); wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 19)); wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 19));
+    esp_rom_delay_us(300);
+    uint32_t a_live[4], b_live[4]; for (int j = 0; j < 4; j++) { a_live[j] = DUMP_BANK_A[j * 1000]; b_live[j] = DUMP_BANK[j * 1000]; }
+    uint32_t w = rd(DUMP_WIDX);
+    /* time a full read of A while B is being written */
+    uint32_t sum = 0; uint32_t tr0 = esp_cpu_get_cycle_count();
+    for (uint32_t i = 0; i < DUMP_BANK_WORDS; i++) sum += DUMP_BANK_A[i];
+    uint32_t tr1 = esp_cpu_get_cycle_count();
+    for (uint32_t i = 0; i < 2000000; i++) { st = rd(DUMP_CTRL); if (st & (1u << 18)) break; }
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    wr(SRAM_OWNER, owner0);
+    uint32_t ua = 0, ub = 0; for (uint32_t i = 0; i < DUMP_BANK_WORDS; i++) { if (DUMP_BANK_A[i] == 0xDEADBEEFu) ua++; if (DUMP_BANK[i] == 0xDEADBEEFu) ub++; }
+    say("RING3 A_owned_idle: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "\r\n", a_owned[0], a_owned[1], a_owned[2], a_owned[3]);
+    say("  during B write (widx=%08" PRIx32 "): A: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "  B: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "\r\n", w, a_live[0], a_live[1], a_live[2], a_live[3], b_live[0], b_live[1], b_live[2], b_live[3]);
+    say("  A full read during B write: %" PRIu32 " cycles (%.2f/word) sum=%08" PRIx32 "\r\n", tr1 - tr0, (double)(tr1 - tr0) / DUMP_BANK_WORDS, sum);
+    say("  after restore: A: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "  B: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "  unwrittenA=%" PRIu32 " unwrittenB=%" PRIu32 " cyclesB=%" PRIu32 "\r\nEND\r\n",
+        DUMP_BANK_A[0], DUMP_BANK_A[1000], DUMP_BANK_A[2000], DUMP_BANK_A[3000], DUMP_BANK[0], DUMP_BANK[1000], DUMP_BANK[2000], DUMP_BANK[3000], ua, ub, esp_cpu_get_cycle_count() - t0);
+}
+
 static bool addr_ok(uint32_t a)
 {
     return (a >= 0x60000000u && a < 0x60100000u) || (a >= 0x3FC80000u && a < 0x3FCE0000u);
@@ -521,6 +594,10 @@ static void handle(char *line)
         cstream(a ? strtoul(a, NULL, 10) : 64, 0, c ? strtoul(c, NULL, 10) : 6, true);
     } else if (!strcmp(cmd, "OWNBIT3")) {
         own_bit3 = (s && *s == '0') ? 0u : 8u; say("OK OWNBIT3 %u\r\n", (unsigned)(own_bit3 ? 1 : 0));
+    } else if (!strcmp(cmd, "RING2")) {
+        ring2(s ? strtoul(s, NULL, 16) : 2u);
+    } else if (!strcmp(cmd, "RING3")) {
+        ring3();
     } else if (!strcmp(cmd, "OWN")) {
         say("OWN %08" PRIx32 "\r\n", rd(SRAM_OWNER));
     } else {
