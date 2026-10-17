@@ -516,6 +516,106 @@ static void ring3(void)
         DUMP_BANK_A[0], DUMP_BANK_A[1000], DUMP_BANK_A[2000], DUMP_BANK_A[3000], DUMP_BANK[0], DUMP_BANK[1000], DUMP_BANK[2000], DUMP_BANK[3000], ua, ub, esp_cpu_get_cycle_count() - t0);
 }
 
+/* CSTREAM2 <nwords_hex> <decim> <nout> <shift> <usb>: duty-cycled continuous capture.
+ * capture nwords (one-shot, 16 Msps) -> stop -> fast copy to a side buffer -> restart at once
+ * -> decimate the copy while the next block is being captured. Gaps = stop+copy+restart time,
+ * measured in cycles and reported, so the host knows exactly how many samples are missing. */
+static void cstream2(uint32_t nwords, uint32_t decim, uint32_t nout, uint32_t shift, bool to_usb)
+{
+    if (nwords < 1024 || nwords > 32768 || decim < 8 || decim > 256 || (nwords % decim)) { say("ERR CSTREAM2 args\r\n"); return; }
+    const uint32_t ctrl = 0x10000u | (nwords - 1);          /* 16 Msps one-shot of nwords */
+    uint32_t *copy = heap_caps_malloc(nwords * 4, MALLOC_CAP_8BIT | MALLOC_CAP_32BIT);
+    if (!copy) { say("ERR no memory for copy (%u words)\r\n", (unsigned)nwords); return; }
+    int8_t *out = NULL;
+    if (!to_usb) {
+        size_t avail = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+        size_t maxout = avail > 8192 ? (avail - 4096) / 2 : 0;
+        if (nout == 0 || nout > maxout) nout = maxout;
+        out = heap_caps_malloc(nout * 2, MALLOC_CAP_8BIT);
+        if (!out) { say("ERR malloc out\r\n"); free(copy); return; }
+    }
+    static uint8_t usbbuf[64]; uint32_t usbn = 0, usb_dropped = 0;
+    const uint32_t owner0 = rd(SRAM_OWNER);
+    const uint32_t own_run = (owner0 & ~0xFu) | 2u;         /* bank A (0x3FCA0000); 32768 words spill into B if supported */
+    const volatile uint32_t *bank = DUMP_BANK_A;
+    uint32_t produced = 0, blocks = 0, gap_sum = 0, gap_max = 0, gap_min = 0xFFFFFFFFu, late = 0, cap_cycles = 0;
+    bool stop = false;
+    if (to_usb) say("CSTREAM2 start nwords=%" PRIu32 " decim=%" PRIu32 " shift=%" PRIu32 " usb\r\n", nwords, decim, shift);
+    portDISABLE_INTERRUPTS();
+    uint32_t t_all0 = esp_cpu_get_cycle_count();
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    wr(SRAM_OWNER, own_run);
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    dump_start(ctrl);
+    uint32_t tcap0 = esp_cpu_get_cycle_count();
+    while (!stop) {
+        /* wait for the one-shot to finish */
+        uint32_t st = 0, guard = 0;
+        while (!((st = rd(DUMP_CTRL)) & (1u << 18))) { if (++guard > 20000000u) break; }
+        uint32_t tdone = esp_cpu_get_cycle_count();
+        if (blocks == 0) cap_cycles = tdone - tcap0;
+        /* stop, give the pair back, copy, restart */
+        wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+        __asm__ volatile("fence rw,rw" ::: "memory");
+        wr(SRAM_OWNER, owner0);
+        __asm__ volatile("fence rw,rw" ::: "memory");
+        {
+            const volatile uint32_t *src = bank; uint32_t *dst = copy;
+            for (uint32_t i = 0; i < nwords; i += 8) {
+                uint32_t a0 = src[i], a1 = src[i + 1], a2 = src[i + 2], a3 = src[i + 3], a4 = src[i + 4], a5 = src[i + 5], a6 = src[i + 6], a7 = src[i + 7];
+                dst[i] = a0; dst[i + 1] = a1; dst[i + 2] = a2; dst[i + 3] = a3; dst[i + 4] = a4; dst[i + 5] = a5; dst[i + 6] = a6; dst[i + 7] = a7;
+            }
+        }
+        wr(SRAM_OWNER, own_run);
+        __asm__ volatile("fence rw,rw" ::: "memory");
+        dump_start(ctrl);
+        uint32_t trestart = esp_cpu_get_cycle_count();
+        uint32_t gap = trestart - tdone; gap_sum += gap; if (gap > gap_max) gap_max = gap; if (gap < gap_min) gap_min = gap;
+        blocks++;
+        /* decimate the copy while the next block fills */
+        const uint32_t *p = copy;
+        for (uint32_t o = 0; o < nwords / decim && !stop; o++, p += decim) {
+            uint32_t a = 0, b = 0;
+            for (uint32_t k = 0; k < decim; k += 4) {
+                uint32_t w0 = p[k] ^ 0x00080200u, w1 = p[k + 1] ^ 0x00080200u, w2 = p[k + 2] ^ 0x00080200u, w3 = p[k + 3] ^ 0x00080200u;
+                a += (w0 & 0x3FFu) + (w1 & 0x3FFu) + (w2 & 0x3FFu) + (w3 & 0x3FFu);
+                b += (w0 & 0xFFC00u) + (w1 & 0xFFC00u) + (w2 & 0xFFC00u) + (w3 & 0xFFC00u);
+            }
+            int32_t iv = ((int32_t)a - 512 * (int32_t)decim) >> shift, qv = ((int32_t)(b >> 10) - 512 * (int32_t)decim) >> shift;
+            if (iv > 127) iv = 127;
+            if (iv < -128) iv = -128;
+            if (qv > 127) qv = 127;
+            if (qv < -128) qv = -128;
+            if (to_usb) {
+                usbbuf[usbn++] = (uint8_t)iv; usbbuf[usbn++] = (uint8_t)qv;
+                if (usbn == 64) {
+                    if (usb_serial_jtag_ll_txfifo_writable()) { usb_serial_jtag_ll_write_txfifo(usbbuf, 64); usb_serial_jtag_ll_txfifo_flush(); } else usb_dropped++;
+                    usbn = 0;
+                    uint8_t c; if (usb_serial_jtag_ll_read_rxfifo(&c, 1)) stop = true;
+                }
+            } else {
+                out[2 * produced] = (int8_t)iv; out[2 * produced + 1] = (int8_t)qv;
+                if (produced + 1 >= nout) stop = true;
+            }
+            produced++;
+        }
+        if ((rd(DUMP_CTRL) >> 18) & 1u) late++;     /* decimation took longer than the capture: a block boundary was missed */
+        if (blocks > 4000000u) break;
+    }
+    uint32_t t_all1 = esp_cpu_get_cycle_count();
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    portENABLE_INTERRUPTS();
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    wr(SRAM_OWNER, owner0);
+    say("CSTREAM2 nwords=%" PRIu32 " decim=%" PRIu32 " shift=%" PRIu32 " produced=%" PRIu32 " blocks=%" PRIu32 " total_cycles=%" PRIu32 " capture_cycles=%" PRIu32 " gap_avg=%" PRIu32 " gap_min=%" PRIu32 " gap_max=%" PRIu32 " late=%" PRIu32 " usb_dropped=%" PRIu32 " tuned=%" PRIu32 "\r\n",
+        nwords, decim, shift, produced, blocks, t_all1 - t_all0, cap_cycles, blocks ? gap_sum / blocks : 0, gap_min, gap_max, late, usb_dropped, tuned_khz);
+    if (!to_usb) {
+        uint32_t hdr[2] = {0x43415033u, produced};
+        usb_write(hdr, sizeof hdr); usb_write(out, produced * 2); say("\r\nEND\r\n"); free(out);
+    } else say("END\r\n");
+    free(copy);
+}
+
 static bool addr_ok(uint32_t a)
 {
     return (a >= 0x60000000u && a < 0x60100000u) || (a >= 0x3FC80000u && a < 0x3FCE0000u);
@@ -598,6 +698,9 @@ static void handle(char *line)
         ring2(s ? strtoul(s, NULL, 16) : 2u);
     } else if (!strcmp(cmd, "RING3")) {
         ring3();
+    } else if (!strcmp(cmd, "CSTREAM2")) {
+        char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = strsep(&s, " "); char *d = strsep(&s, " "); char *e = s;
+        cstream2(a ? strtoul(a, NULL, 16) : 16384u, b ? strtoul(b, NULL, 10) : 16, c ? strtoul(c, NULL, 10) : 0, d ? strtoul(d, NULL, 10) : 4, e && *e == '1');
     } else if (!strcmp(cmd, "OWN")) {
         say("OWN %08" PRIx32 "\r\n", rd(SRAM_OWNER));
     } else {
