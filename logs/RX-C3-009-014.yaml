@@ -1,0 +1,31 @@
+# Summary entries; details in docs/c3_findings.md and the JSON/TXT logs named below.
+- experiment_id: RX-C3-009
+  title: CKGEN reg0 combinations with the 5/6 bit set
+  date: 2026-10-17
+  soc: ESP32-C3 rev v0.4
+  capture_path: logs/RX-C3-009_combos.txt, logs/RX-C3-007_ratio_ck*.json
+  control_result: positive control 5/6 reproduced; no other ratio
+  interpretation: receive conversion ratios available = {1, 5/6}
+- experiment_id: RX-C3-010
+  title: Dump control bit17 (S3 circular) on C3
+  capture_path: logs (RING output in docs)
+  interpretation: bit17 stops after a few words; bit14 is the in-bank ring mode; no 32768-word one-shot
+- experiment_id: RX-C3-011
+  title: Single-bit flips of analog blocks 0x62 (RFPLL) and 0x63 (SDM)
+  capture_path: logs/RX-C3-011_flip_blk62.json, logs/RX-C3-011_flip_blk63.json, logs/RX-C3-011_flipscan.txt
+  control_result: 208 flips, 0 hangs, 7 marker-killing flips, none with an alternate comb
+  interpretation: no LO post-divider or alternate conversion found
+- experiment_id: RX-C3-012
+  title: Follow-the-writer continuous stream (timing valid, data invalid)
+  capture_path: logs/RX-C3-012_stream_tests.txt, captures/cs_*.bin, captures/us_*.bin
+  control_result: late=0 at 1 MS/s; USB 0.44-0.73 MB/s; data constant because owned banks are unreadable while running
+  interpretation: USB Serial/JTAG ceiling ~0.7 MB/s on this host
+- experiment_id: RX-C3-013
+  title: Owner register bank mapping and live-read behaviour
+  control_result: owner 2 -> 0x3FCA0000, 0xA -> 0x3FCB0000; both banks unreadable while the engine runs
+  interpretation: no hardware double buffering
+- experiment_id: RX-C3-014
+  title: Duty-cycled continuous capture CSTREAM2
+  capture_path: captures/cs2_*.bin, captures/us2_2437_d64.bin
+  control_result: valid data; gap 79960-81268 cycles (0.50 ms) per 1.024 ms block; 67% coverage; USB effective 164 kS/s at decim 64
+  interpretation: maximum contiguous span 1.024 ms at 16 MS/s; insufficient for ISDB-T mode 3 symbol timing
