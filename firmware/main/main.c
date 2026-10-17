@@ -36,6 +36,7 @@
 #include "hal/usb_serial_jtag_ll.h"
 #include "nvs_flash.h"
 #include "heap_memory_layout.h"
+#include "esp_heap_caps.h"
 #include "soc/soc.h"
 
 /* The dump engine writes the 128 KiB RF bank 0x3FCA0000..0x3FCBFFFF (data at
@@ -184,6 +185,163 @@ static void capture(uint32_t ctrl, uint32_t nwords)
     say("\r\nEND\r\n");
 }
 
+
+/* ---- ring / continuous mode experiments ------------------------------------ */
+
+/* RING: start the engine with the given control word, sample the write index over time,
+ * read a few bank words at start and end, stop. Tells whether circular mode exists. */
+static void ring_probe(uint32_t ctrl, uint32_t total_us)
+{
+    for (uint32_t i = 0; i < DUMP_BANK_WORDS; i++) DUMP_BANK[i] = 0xDEADBEEFu;
+    const uint32_t owner0 = rd(SRAM_OWNER);
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    wr(DUMP_CTRL, ctrl & ~(1u << 31));
+    wr(SRAM_OWNER, (owner0 & ~7u) | 2u);
+    wr(SRAM_OWNER, rd(SRAM_OWNER) | 8u);
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    uint32_t t0 = esp_cpu_get_cycle_count();
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 31));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 19));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 19));
+    uint32_t samp_t[16], samp_w[16], samp_s[16], first_word[4], last_word[4];
+    uint32_t step = total_us / 16 ? total_us / 16 : 1;
+    for (int k = 0; k < 16; k++) {
+        esp_rom_delay_us(step);
+        samp_t[k] = esp_cpu_get_cycle_count() - t0;
+        samp_w[k] = rd(DUMP_WIDX);
+        samp_s[k] = rd(DUMP_CTRL);
+        if (k == 0) for (int j = 0; j < 4; j++) first_word[j] = DUMP_BANK[j * 4000];
+    }
+    for (int j = 0; j < 4; j++) last_word[j] = DUMP_BANK[j * 4000];
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    wr(SRAM_OWNER, owner0);
+    say("RING ctrl=%08" PRIx32 " us=%" PRIu32 "\r\n", ctrl, total_us);
+    for (int k = 0; k < 16; k++)
+        say("  t=%9" PRIu32 " cyc widx=%08" PRIx32 " status=%08" PRIx32 "\r\n", samp_t[k], samp_w[k], samp_s[k]);
+    say("  words[0,4000,8000,12000] first: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "  last: %08" PRIx32 " %08" PRIx32 " %08" PRIx32 " %08" PRIx32 "\r\n",
+        first_word[0], first_word[1], first_word[2], first_word[3], last_word[0], last_word[1], last_word[2], last_word[3]);
+    uint32_t unwritten = 0;
+    for (uint32_t i = 0; i < DUMP_BANK_WORDS; i++) if (DUMP_BANK[i] == 0xDEADBEEFu) unwritten++;
+    say("  unwritten=%" PRIu32 "\r\nEND\r\n", unwritten);
+}
+
+/* STREAM: run the ring, follow the write index and box-car decimate by `decim` into an
+ * int16 I/Q buffer; stop when `nout` samples are collected. Reports overruns and timing. */
+static void stream_decimate(uint32_t ctrl, uint32_t ring_words, uint32_t decim, uint32_t nout)
+{
+    if (decim < 1 || decim > 256 || (ring_words & (ring_words - 1)) || ring_words > DUMP_BANK_WORDS) { say("ERR STREAM args\r\n"); return; }
+    size_t avail = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_32BIT);
+    if (avail < 8192) { say("ERR no memory\r\n"); return; }
+    size_t maxout = (avail - 4096) / 4;
+    if (nout == 0 || nout > maxout) nout = maxout;
+    int16_t *out = heap_caps_malloc(nout * 4, MALLOC_CAP_8BIT | MALLOC_CAP_32BIT);
+    if (!out) { say("ERR malloc\r\n"); return; }
+    const uint32_t mask = ring_words - 1;
+    const uint32_t owner0 = rd(SRAM_OWNER);
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    wr(DUMP_CTRL, ctrl & ~(1u << 31));
+    wr(SRAM_OWNER, (owner0 & ~7u) | 2u);
+    wr(SRAM_OWNER, rd(SRAM_OWNER) | 8u);
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    uint32_t overruns = 0, waits = 0, produced = 0, rp = 0, maxlag = 0;
+    portDISABLE_INTERRUPTS();
+    uint32_t t0 = esp_cpu_get_cycle_count();
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 31));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 19));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 19));
+    /* Let the writer get ahead by one block before reading. */
+    while (((rd(DUMP_WIDX) - rp) & mask) < decim + 8) {}
+    uint32_t guard = 0;
+    while (produced < nout) {
+        uint32_t widx = rd(DUMP_WIDX) & mask;
+        uint32_t lag = (widx - rp) & mask;
+        if (lag < decim + 8) { waits++; if (++guard > 50000000u) break; continue; }
+        guard = 0;
+        if (lag > maxlag) maxlag = lag;
+        if (lag > ring_words - 2 * decim) { overruns++; rp = (widx - 4 * decim) & mask; continue; }
+        /* Sum offset-binary I and Q fields of `decim` raw words. */
+        uint32_t a = 0, b = 0;
+        const volatile uint32_t *p = DUMP_BANK + rp;
+        for (uint32_t k = 0; k < decim; k++) {
+            uint32_t w = p[k] ^ 0x00080200u;
+            a += w & 0x3FFu;
+            b += w & 0xFFC00u;
+        }
+        out[2 * produced] = (int16_t)((int32_t)a - 512 * (int32_t)decim);
+        out[2 * produced + 1] = (int16_t)((int32_t)(b >> 10) - 512 * (int32_t)decim);
+        produced++;
+        rp = (rp + decim) & mask;
+    }
+    uint32_t t1 = esp_cpu_get_cycle_count();
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    portENABLE_INTERRUPTS();
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    wr(SRAM_OWNER, owner0);
+    say("STREAM ctrl=%08" PRIx32 " ring=%" PRIu32 " decim=%" PRIu32 " nout=%" PRIu32 " produced=%" PRIu32 " cycles=%" PRIu32 " overruns=%" PRIu32 " waits=%" PRIu32 " maxlag=%" PRIu32 " tuned=%" PRIu32 "\r\n",
+        ctrl, ring_words, decim, nout, produced, t1 - t0, overruns, waits, maxlag, tuned_khz);
+    uint32_t hdr[2] = {0x43415032u, produced};
+    usb_write(hdr, sizeof hdr);
+    usb_write(out, produced * 4);
+    say("\r\nEND\r\n");
+    free(out);
+}
+
+#define DUMP_BANK_A ((volatile uint32_t *)0x3fca0000)   /* reserved region, candidate second bank */
+
+/* BANK <sel>: one-shot capture with owner low bits = sel; report which half of the 128 KiB region was written. */
+static void bank_probe(uint32_t sel, uint32_t ctrl)
+{
+    for (uint32_t i = 0; i < DUMP_BANK_WORDS; i++) { DUMP_BANK[i] = 0xDEADBEEFu; DUMP_BANK_A[i] = 0xDEADBEEFu; }
+    const uint32_t owner0 = rd(SRAM_OWNER);
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    wr(DUMP_CTRL, ctrl & ~(1u << 31));
+    wr(SRAM_OWNER, (owner0 & ~7u) | (sel & 7u));
+    wr(SRAM_OWNER, rd(SRAM_OWNER) | 8u);
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    uint32_t own = rd(SRAM_OWNER);
+    uint32_t t0 = esp_cpu_get_cycle_count();
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 31));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 19));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 19));
+    uint32_t st = 0; bool done = false;
+    for (uint32_t i = 0; i < 2000000; i++) { st = rd(DUMP_CTRL); if (st & (1u << 18)) { done = true; break; } }
+    uint32_t t1 = esp_cpu_get_cycle_count();
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    wr(SRAM_OWNER, owner0);
+    uint32_t ua = 0, ub = 0;
+    for (uint32_t i = 0; i < DUMP_BANK_WORDS; i++) { if (DUMP_BANK_A[i] == 0xDEADBEEFu) ua++; if (DUMP_BANK[i] == 0xDEADBEEFu) ub++; }
+    say("BANK sel=%" PRIu32 " owner_set=%08" PRIx32 " done=%d status=%08" PRIx32 " cycles=%" PRIu32 " widx=%08" PRIx32 " unwritten_A(3fca0000)=%" PRIu32 " unwritten_B(3fcb0000)=%" PRIu32 " A[0..3]=%08" PRIx32 " %08" PRIx32 " B[0..3]=%08" PRIx32 " %08" PRIx32 "\r\n",
+        sel, own, done, st, t1 - t0, rd(DUMP_WIDX), ua, ub, DUMP_BANK_A[0], DUMP_BANK_A[1], DUMP_BANK[0], DUMP_BANK[1]);
+}
+
+/* DECBENCH <decim>: time the box-car decimation of the whole bank (already captured). */
+static void dec_bench(uint32_t decim)
+{
+    static int16_t outbuf[2 * 2048];
+    if (decim < 8 || decim > 256) decim = 16;
+    uint32_t n = DUMP_BANK_WORDS / decim; if (n > 2048) n = 2048;
+    portDISABLE_INTERRUPTS();
+    uint32_t t0 = esp_cpu_get_cycle_count();
+    const volatile uint32_t *p = DUMP_BANK;
+    for (uint32_t o = 0; o < n; o++) {
+        uint32_t a = 0, b = 0;
+        for (uint32_t k = 0; k < decim; k += 4) {
+            uint32_t w0 = p[k] ^ 0x00080200u, w1 = p[k + 1] ^ 0x00080200u, w2 = p[k + 2] ^ 0x00080200u, w3 = p[k + 3] ^ 0x00080200u;
+            a += (w0 & 0x3FFu) + (w1 & 0x3FFu) + (w2 & 0x3FFu) + (w3 & 0x3FFu);
+            b += (w0 & 0xFFC00u) + (w1 & 0xFFC00u) + (w2 & 0xFFC00u) + (w3 & 0xFFC00u);
+        }
+        p += decim;
+        outbuf[2 * o] = (int16_t)((int32_t)a - 512 * (int32_t)decim);
+        outbuf[2 * o + 1] = (int16_t)((int32_t)(b >> 10) - 512 * (int32_t)decim);
+    }
+    uint32_t t1 = esp_cpu_get_cycle_count();
+    portENABLE_INTERRUPTS();
+    say("DECBENCH decim=%" PRIu32 " words=%" PRIu32 " cycles=%" PRIu32 " -> %.2f cycles/word (budget 10.0 at 16 MS/s, 160 MHz) out0=%d,%d\r\n",
+        decim, n * decim, t1 - t0, (double)(t1 - t0) / (n * decim), outbuf[0], outbuf[1]);
+}
+
 static bool addr_ok(uint32_t a)
 {
     return (a >= 0x60000000u && a < 0x60100000u) || (a >= 0x3FC80000u && a < 0x3FCE0000u);
@@ -241,10 +399,23 @@ static void handle(char *line)
         usb_write(hdr, sizeof hdr);
         usb_write((const void *)DUMP_BANK, DUMP_BANK_WORDS * 4);
         say("\r\nEND\r\n");
+    } else if (!strcmp(cmd, "RING")) {
+        char *a = strsep(&s, " "); char *b = s;
+        ring_probe(a ? strtoul(a, NULL, 16) : 0x34000u, b ? strtoul(b, NULL, 10) : 2000);
+    } else if (!strcmp(cmd, "STREAM")) {
+        char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = strsep(&s, " "); char *d = s;
+        stream_decimate(a ? strtoul(a, NULL, 16) : 0x34000u, b ? strtoul(b, NULL, 10) : 16384, c ? strtoul(c, NULL, 10) : 16, d ? strtoul(d, NULL, 10) : 0);
+    } else if (!strcmp(cmd, "HEAP")) {
+        say("HEAP free %u largest %u\r\n", (unsigned)heap_caps_get_free_size(MALLOC_CAP_8BIT), (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    } else if (!strcmp(cmd, "BANK")) {
+        char *a = strsep(&s, " "); char *b = s;
+        bank_probe(a ? strtoul(a, NULL, 10) : 2, b ? strtoul(b, NULL, 16) : 0x13fffu);
+    } else if (!strcmp(cmd, "DECBENCH")) {
+        dec_bench(s ? strtoul(s, NULL, 10) : 16);
     } else if (!strcmp(cmd, "OWN")) {
         say("OWN %08" PRIx32 "\r\n", rd(SRAM_OWNER));
     } else {
-        say("ERR ? INFO TUNE GAIN RXMODE CAP ADCTRIG RD WR I2C I2CW OWN\r\n");
+        say("ERR ? INFO TUNE GAIN RXMODE CAP ADCTRIG RING STREAM HEAP RD WR I2C I2CW OWN\r\n");
     }
 }
 

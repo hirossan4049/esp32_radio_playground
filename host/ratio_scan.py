@@ -21,7 +21,9 @@ def scan(s, ck_val, plls, tag):
         try:
             data, meta = rxprobe.capture(s, 0x13fff, 16384)
         except Exception as e:
-            print(f"PLL {pll/1e3:.0f}: capture failed {e}"); rows.append(dict(pll=pll, error=str(e))); continue
+            print(f"PLL {pll/1e3:.0f}: capture failed {e}; resetting board"); rows.append(dict(pll=pll, error=str(e)))
+            s.dtr = False; s.rts = True; time.sleep(0.1); s.rts = False; time.sleep(3); s.reset_input_buffer()
+            continue
         finally:
             rxprobe.cmd(s, f"I2CW 65 0 {base:02x}", wait=0.3)
         w = np.frombuffer(data, dtype="<u4")
@@ -60,5 +62,5 @@ if __name__ == "__main__":
     ratios = sorted({Fraction(p, q) for q in range(1, 13) for p in range(1, 2 * q) if Fraction(p, q) <= Fraction(13, 10) and Fraction(p, q) >= Fraction(1, 8)})
     res = fit(rows, ratios)
     print(f"=== ck={ck:02x}: best ratio fits (fraction of predicted in-window lines actually observed) ===")
-    for frac, hits, cand, r, det in res[:8]:
+    for frac, hits, cand, r, det in res[:5]:
         print(f"  r={str(r):>6} ({float(r):.4f})  {hits:3d}/{cand:3d} = {frac:.2f}   e.g. {det[:3]}")
