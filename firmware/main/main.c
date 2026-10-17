@@ -342,6 +342,103 @@ static void dec_bench(uint32_t decim)
         decim, n * decim, t1 - t0, (double)(t1 - t0) / (n * decim), outbuf[0], outbuf[1]);
 }
 
+/* ---- continuous acquisition: one-shot captures restarted back to back ----------------
+ * The C3 has one usable dump bank and no circular mode (RX-C3-010), so the reader follows the
+ * writer's index inside a one-shot run and restarts the engine the moment it finishes. The
+ * restart costs a few microseconds of samples per 16384-word block; the count is reported so
+ * the gaps are known. Box-car decimation by `decim`, output int8 I/Q (sum >> shift) or int16. */
+static inline void dump_start(uint32_t ctrl)
+{
+    wr(DUMP_CTRL, ctrl & ~(1u << 31));
+    wr(DUMP_CTRL, ctrl | (1u << 31));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) | (1u << 19));
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 19));
+}
+
+static void cstream(uint32_t decim, uint32_t nout, uint32_t shift, bool to_usb)
+{
+    const uint32_t ctrl = 0x13fffu;                 /* 16 Msps, 16384 words one-shot */
+    if (decim < 8 || decim > 256 || (DUMP_BANK_WORDS % decim)) { say("ERR CSTREAM decim 8..256, divides 16384\r\n"); return; }
+    int8_t *out = NULL;
+    if (!to_usb) {
+        size_t avail = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+        size_t maxout = avail > 8192 ? (avail - 4096) / 2 : 0;
+        if (nout == 0 || nout > maxout) nout = maxout;
+        out = heap_caps_malloc(nout * 2, MALLOC_CAP_8BIT);
+        if (!out) { say("ERR malloc\r\n"); return; }
+    }
+    static uint8_t usbbuf[64]; uint32_t usbn = 0, usb_dropped = 0;
+    const uint32_t owner0 = rd(SRAM_OWNER);
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    wr(SRAM_OWNER, (owner0 & ~7u) | 2u);
+    wr(SRAM_OWNER, rd(SRAM_OWNER) | 8u);
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    uint32_t produced = 0, blocks = 0, late = 0, maxlag = 0, restart_cycles_sum = 0, restart_cycles_max = 0, waits = 0;
+    bool stop = false;
+    if (to_usb) { say("CSTREAM start decim=%" PRIu32 " shift=%" PRIu32 " fmt=int8 usb\r\n", decim, shift); }
+    portDISABLE_INTERRUPTS();
+    uint32_t t0 = esp_cpu_get_cycle_count();
+    dump_start(ctrl);
+    while (!stop) {
+        uint32_t rp = 0;
+        while (rp < DUMP_BANK_WORDS) {
+            uint32_t widx = rd(DUMP_WIDX) & 0x3FFFu, st = rd(DUMP_CTRL);
+            bool done = (st >> 18) & 1u;
+            uint32_t avail_w = done ? DUMP_BANK_WORDS - rp : (widx - rp);
+            if (avail_w < decim + 4 && !done) { waits++; continue; }
+            if (!done && widx - rp > maxlag) maxlag = widx - rp;
+            uint32_t a = 0, b = 0;
+            const volatile uint32_t *p = DUMP_BANK + rp;
+            for (uint32_t k = 0; k < decim; k += 4) {
+                uint32_t w0 = p[k] ^ 0x00080200u, w1 = p[k + 1] ^ 0x00080200u, w2 = p[k + 2] ^ 0x00080200u, w3 = p[k + 3] ^ 0x00080200u;
+                a += (w0 & 0x3FFu) + (w1 & 0x3FFu) + (w2 & 0x3FFu) + (w3 & 0x3FFu);
+                b += (w0 & 0xFFC00u) + (w1 & 0xFFC00u) + (w2 & 0xFFC00u) + (w3 & 0xFFC00u);
+            }
+            rp += decim;
+            int32_t iv = ((int32_t)a - 512 * (int32_t)decim) >> shift, qv = ((int32_t)(b >> 10) - 512 * (int32_t)decim) >> shift;
+            if (iv > 127) iv = 127; if (iv < -128) iv = -128; if (qv > 127) qv = 127; if (qv < -128) qv = -128;
+            if (to_usb) {
+                usbbuf[usbn++] = (uint8_t)iv; usbbuf[usbn++] = (uint8_t)qv;
+                if (usbn == 64) {
+                    if (usb_serial_jtag_ll_txfifo_writable()) { usb_serial_jtag_ll_write_txfifo(usbbuf, 64); usb_serial_jtag_ll_txfifo_flush(); }
+                    else usb_dropped++;
+                    usbn = 0;
+                    uint8_t c; if (usb_serial_jtag_ll_read_rxfifo(&c, 1)) stop = true;   /* any byte from the host stops */
+                }
+            } else {
+                out[2 * produced] = (int8_t)iv; out[2 * produced + 1] = (int8_t)qv;
+            }
+            produced++;
+            if (!to_usb && produced >= nout) { stop = true; break; }
+        }
+        blocks++;
+        if (stop) break;
+        /* Block finished: the writer must have finished too (we read up to the end only when done). */
+        uint32_t r0 = esp_cpu_get_cycle_count();
+        if (!((rd(DUMP_CTRL) >> 18) & 1u)) late++;       /* reader finished before the writer: should not happen */
+        dump_start(ctrl);
+        uint32_t rc = esp_cpu_get_cycle_count() - r0;
+        restart_cycles_sum += rc; if (rc > restart_cycles_max) restart_cycles_max = rc;
+        if (blocks > 2000000u) break;
+    }
+    uint32_t t1 = esp_cpu_get_cycle_count();
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    portENABLE_INTERRUPTS();
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    wr(SRAM_OWNER, owner0);
+    say("CSTREAM decim=%" PRIu32 " shift=%" PRIu32 " produced=%" PRIu32 " blocks=%" PRIu32 " cycles=%" PRIu32 " late=%" PRIu32 " waits=%" PRIu32 " maxlag=%" PRIu32 " restart_avg=%" PRIu32 " restart_max=%" PRIu32 " usb_dropped=%" PRIu32 " tuned=%" PRIu32 "\r\n",
+        decim, shift, produced, blocks, t1 - t0, late, waits, maxlag, blocks > 1 ? restart_cycles_sum / (blocks - 1) : 0, restart_cycles_max, usb_dropped, tuned_khz);
+    if (!to_usb) {
+        uint32_t hdr[2] = {0x43415033u, produced};
+        usb_write(hdr, sizeof hdr);
+        usb_write(out, produced * 2);
+        say("\r\nEND\r\n");
+        free(out);
+    } else {
+        say("END\r\n");
+    }
+}
+
 static bool addr_ok(uint32_t a)
 {
     return (a >= 0x60000000u && a < 0x60100000u) || (a >= 0x3FC80000u && a < 0x3FCE0000u);
@@ -412,6 +509,12 @@ static void handle(char *line)
         bank_probe(a ? strtoul(a, NULL, 10) : 2, b ? strtoul(b, NULL, 16) : 0x13fffu);
     } else if (!strcmp(cmd, "DECBENCH")) {
         dec_bench(s ? strtoul(s, NULL, 10) : 16);
+    } else if (!strcmp(cmd, "CSTREAM")) {
+        char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = s;
+        cstream(a ? strtoul(a, NULL, 10) : 16, b ? strtoul(b, NULL, 10) : 0, c ? strtoul(c, NULL, 10) : 4, false);
+    } else if (!strcmp(cmd, "USTREAM")) {
+        char *a = strsep(&s, " "); char *c = s;
+        cstream(a ? strtoul(a, NULL, 10) : 64, 0, c ? strtoul(c, NULL, 10) : 6, true);
     } else if (!strcmp(cmd, "OWN")) {
         say("OWN %08" PRIx32 "\r\n", rd(SRAM_OWNER));
     } else {
