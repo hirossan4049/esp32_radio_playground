@@ -1,0 +1,23 @@
+experiment_id: RX-C3-003
+title: LO sweep against internal 2440/2448 MHz spurs
+date: 2026-10-17
+board: unknown ESP32-C3 dev board, PCB antenna
+soc: ESP32-C3
+revision: v0.4
+firmware_commit: 9082359
+esp_idf_version: v5.2.1
+rx_method: wifi_rf_iq_dump, 16 Msps, 16384 words, Welch PSD 1024
+rf_input_mhz: null (no external source)
+rf_input_dbm: null
+rx_tuning_mhz: [2430, 2435, 2437, 2440, 2445, 2450, 2460]
+sample_rate_sps: 15.995e6
+sample_format: complex 10-bit I/Q
+attenuation_db: null
+filter: PHY default
+pll_lock: inferred from spur movement
+fft_peak_hz: RF 2440 at offsets -5.03/-3.00/0.00 MHz (LO 2435/2437/2440); RF 2448 at -8.00/-3.00/+2.00 MHz (LO 2440/2445/2450)
+snr_db: 10..25 dB above PSD median
+sample_loss_percent: 0
+capture_path: captures/sweep16_lo*.bin
+control_result: peaks consistent with fixed RF under LO-RF convention; inconsistent under RF-LO
+interpretation: LO tuning verified by internal spurs only; external RF reception unverified

@@ -1,0 +1,23 @@
+experiment_id: RX-C3-001
+title: ESP32-C3 ADC dump engine first start (library adctrig vs own sequence)
+date: 2026-10-17
+board: unknown ESP32-C3 dev board, PCB antenna, native USB Serial/JTAG (303a:1001)
+soc: ESP32-C3 (QFN32)
+revision: v0.4
+firmware_commit: 9082359
+esp_idf_version: v5.2.1
+rx_method: wifi_rf_iq_dump (0x60033D5C engine -> SRAM 0x3FCB0000)
+rf_input_mhz: null (ambient only)
+rf_input_dbm: null
+rx_tuning_mhz: 2437
+sample_rate_sps: null
+sample_format: raw 32-bit dump words
+attenuation_db: null
+filter: PHY default
+pll_lock: not measured
+fft_peak_hz: null
+snr_db: null
+sample_loss_percent: null
+capture_path: captures/c3_2437_adctrig_lib.bin
+control_result: own sequence without bit19 pulse wrote nothing (16384 sentinel words intact); library adctrig wrote 8193 words
+interpretation: unverified; dump engine confirmed to write on C3 when started by adctrig; words byte-replicated (selector 0x60033D90 = 0)

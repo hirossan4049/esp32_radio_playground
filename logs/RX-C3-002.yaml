@@ -1,0 +1,23 @@
+experiment_id: RX-C3-002
+title: Own dump sequence with bit19 pulse; dump rate and word layout
+date: 2026-10-17
+board: unknown ESP32-C3 dev board, PCB antenna
+soc: ESP32-C3
+revision: v0.4
+firmware_commit: 9082359
+esp_idf_version: v5.2.1
+rx_method: wifi_rf_iq_dump
+rf_input_mhz: null (ambient only)
+rf_input_dbm: null
+rx_tuning_mhz: 2437
+sample_rate_sps: [79.85e6 (ctrl 0x3FFF), 15.995e6 (ctrl 0x13FFF)]
+sample_format: 32-bit word, I = bits0..9, Q = bits10..19 two's complement (after 0x60033D90 = 0x000C2040)
+attenuation_db: null
+filter: PHY default
+pll_lock: not measured
+fft_peak_hz: -3.0e6 (RF 2440 MHz spur under LO-RF)
+snr_db: null
+sample_loss_percent: 0 (one-shot 16384 words, write index 0x3FFF)
+capture_path: [captures/c3_2437_cap_3fff.bin, captures/c3_2437_cap_13fff.bin, captures/c3_2437_sel_3fff.bin, captures/c3_2437_sel_13fff.bin]
+control_result: fill time measured by CPU cycle counter at 160 MHz; rates identical to ESP32-S3 (80/16 Msps)
+interpretation: verified for the dump path; RF reception not yet shown
