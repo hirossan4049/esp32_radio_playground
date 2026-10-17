@@ -1,0 +1,14 @@
+experiment_id: RX-C3-006
+title: Single-bit flips of analog CKGEN block 0x65 regs 0..2, effect on LO conversion
+date: 2026-10-17
+board: unknown ESP32-C3 dev board, PCB antenna
+soc: ESP32-C3
+revision: v0.4
+firmware_commit: 6ddf3e0
+esp_idf_version: v5.2.1
+rx_method: wifi_rf_iq_dump, 16 Msps
+rf_input_mhz: internal 40 MHz harmonics
+rx_tuning_mhz: [2403, 2443, 2523, 2683]
+capture_path: captures/ckgen_r*b*_pll*.bin, logs/RX-C3-006_ckgen_explore.json
+control_result: baseline and final checks show the +3 MHz marker at 2403/2683; all flips reversible
+interpretation: reg0 bits 2, 5, 6 remove the normal comb line (alternate conversion or receiver off: undetermined); other bits no LO effect; dump clock unchanged
