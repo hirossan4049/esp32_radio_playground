@@ -1,0 +1,17 @@
+experiment_id: RX-C3-004
+title: PLL lock-range map using 40 MHz crystal harmonics as markers
+date: 2026-10-17
+board: unknown ESP32-C3 dev board, PCB antenna
+soc: ESP32-C3
+revision: v0.4
+firmware_commit: 6ddf3e0 (tune window widened to 1500..3500 MHz)
+esp_idf_version: v5.2.1
+rx_method: wifi_rf_iq_dump, 16 Msps, 16384 words, Welch PSD 1024
+rf_input_mhz: internal 40 MHz harmonics (no external source)
+rx_tuning_mhz: 1963..3083 step 40 (LO = 40k+3)
+sample_rate_sps: 15.995e6
+sample_format: complex 10-bit I/Q
+pll_lock: marker present 2203..2803 MHz; absent <=2163 and >=2843; analog 0x62:12 bits[3:2] == 0 when locked
+capture_path: captures/lockscan_lo*.bin, logs/i2c_dump_c3.json
+control_result: marker at +3.000 MHz tracks LO setting; absent outside lock range
+interpretation: C3 normal-mode LO range ~2.2..2.8 GHz on this board (same as S3 reports)

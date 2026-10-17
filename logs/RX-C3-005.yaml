@@ -1,0 +1,16 @@
+experiment_id: RX-C3-005
+title: 5/6 conversion mode (CKGEN 0x65:0 bit4) on ESP32-C3
+date: 2026-10-17
+board: unknown ESP32-C3 dev board, PCB antenna
+soc: ESP32-C3
+revision: v0.4
+firmware_commit: 6ddf3e0
+esp_idf_version: v5.2.1
+rx_method: wifi_rf_iq_dump, 16 Msps
+rf_input_mhz: internal harmonics 2400 (60x40) and 2000 (50x40)
+rx_tuning_mhz: PLL coordinate 2403
+pll_lock: locked (marker visible)
+fft_peak_hz: normal 0x63 -> +3.0 MHz (10.2/15.3 dB); bit4 set 0x73 -> +2.5 MHz (15.2/16.1 dB), +3.0 gone
+capture_path: captures/ckgen_lo2403_*.bin
+control_result: effect reversible; repeated twice; matches 5/6 prediction (2403*5/6 = 2002.5 MHz)
+interpretation: C3 has the same 5/6 receive conversion as S3; effective LO reach ~1.84 GHz expected, lower edge not yet measured
