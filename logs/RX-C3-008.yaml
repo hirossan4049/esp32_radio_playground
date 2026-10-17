@@ -1,0 +1,14 @@
+experiment_id: RX-C3-008
+title: Ambient burst statistics at Wi-Fi ch6 vs out-of-band LOs
+date: 2026-10-17
+board: unknown ESP32-C3 dev board, PCB antenna
+soc: ESP32-C3
+revision: v0.4
+firmware_commit: 6ddf3e0
+esp_idf_version: v5.2.1
+rx_method: wifi_rf_iq_dump, 16 Msps, 40 x 1 ms captures per LO, gain selector 40
+rf_input_mhz: ambient (strongest 2.4 GHz AP on channel 6 at -57 dBm per the host Wi-Fi scan)
+rx_tuning_mhz: [2437, 2300, 2600, 2437]
+capture_path: logs/RX-C3-008_ambient.json
+control_result: bursts 9/40 and 6/40 at 2437, 1/40 at 2300, 11/40 at 2600; saturation only at 2437 and 2600
+interpretation: unverified; consistent with external RF reception but no input on/off control
