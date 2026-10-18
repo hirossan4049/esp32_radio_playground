@@ -228,6 +228,20 @@ USB シリアル番号 = MAC E8:F6:0A:16:BD:84。開発ボード型式は不明�
 - 含意: ダンプエンジンは **アナログ ±11 MHz・10 bit・80 MS/s の生 I/Q** を出し、16 MS/s は反エイリアス無しの 1/5 間引き。ホスト処理では 16 MS/s の ±5〜8 MHz 帯に 2448 MHz 等の折り返しがあることを前提にする。
   ISDB-T（6 MHz 幅）用途なら 80 MS/s で取得して自前で帯域制限・間引きするのが正しい（C3 の計算量では非現実的、RX-C3-014 参照）。
 
+### 文献照合: ESPARGOS/esp-sdr（2026, 公開リポジトリ）との突き合わせ（2026-10-18）[文献]→[実測]
+- esp-sdr の `docs/how-it-works.md` と `main/targets/esp32c3/receiver.c` は本調査と同じ機構を独立に記述: ダンプ制御 0x60033D5C、レーン選択 0x60033D90（6 bit × 4 フィールド、値 0..3 が受信 I/Q）、
+  所有権 0x600C1020（bit0..2 = 128 KiB ブロック、bit3 = 上位 64 KiB → `2|8` = 0x3FCB0000）、S3 と同様 **bit15 = 80 MS/s の 1/2（40 MS/s）**、bit16 = 1/5（16 MS/s）。
+  C3 に連続モードが無い理由も同じ（CPU が読める他ブロックはプログラム/ヒープ）。5/6 LO は CKGEN 0x65 reg0 bit4（RX-C3-006 と同一）、範囲 1842〜2209 MHz を 6/5 倍の PLL で実現。
+- **40 MS/s を C3 で確認 [実測]**: ctrl 0x0BFFF（bit15）で 16384 語が 65,585 サイクル = 39.97 MS/s（`captures/rate_0bfff.bin`）。本調査の RX-C3-002 では bit15 を試していなかった。
+- **語の bit20..27 = ゲイン指標 [実測]**: 強制ゲイン 20/30 のキャプチャで bit20..27 は全語 20/30（先頭 1 語のみ 234）。esp-sdr の記述どおり。
+- esp-sdr が RX フィルタ帯域として使う BBTOP 0x67 reg4/5 の下位 6 bit（容量コード）は、libphy `phy_rx_band_set` が書くレジスタと一致（0x67 reg4/5 に (param+8)·19/x − 8 を書く）。
+  → 「rx_band」はベースバンドフィルタ帯域であり RF バンド切替ではない。
+- esp-sdr も「ダンプのクロック分周がフィルタを掛けるか不明（S2/H2 では単純間引きで折り返す）」としており、RX-C3-016 の「16 MS/s は反エイリアス無し」はこれを C3 で確定した。
+- アナログブロックの機能同定 [静的]（libphy/librftest 逆アセンブリで各ブロックを書く関数名）:
+  0x61 bias/LDO（bias_reg_set, ulp_ext_code）、0x62 RFPLL、0x63 RFPLL SDM、0x64 ADC/RX 飽和系（rfrx_sat_check, test_div_adc, phy_2480m_opt）、0x65 CKGEN、0x66 BBPLL（i2c_bbpll_set）、
+  0x67 BBTOP（RX ゲイン/DC/IQ 校正, フィルタ, BT TX 電力）、0x69 デジタル LDO/SAR/温度、0x6a バイアス基準/RC、0x6b SAR ADC/VDD33/TX cap/PA、**0x6d RX RF（rftest `rx_2440m_opt` が reg4/6 を書く）**。
+  C3 で読める非ゼロブロックは 0x61,62,63,64,65,66,67,69,6a,6b,6d（`logs/RX-C3-017_i2c_blocks_60_6f.json`）。RX-C3-011 で走査済みは 62/63/65 のみ。
+
 ## 最終評価（2026-10-17、ESP32-C3 実機）
 | レベル | 判定 | 根拠 |
 |---|---|---|
