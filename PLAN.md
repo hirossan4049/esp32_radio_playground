@@ -161,5 +161,5 @@ interpretation: unverified
 | 2 | SigMF 保存（欠落をメタデータに記録） | [x] `host/esp32sdr/sigmf.py` |
 | 3 | FFT・ウォーターフォール（真の時刻軸） | [x] `host/spectrum.py` |
 | 4 | 周波数掃引・信号検出 | [x] `host/sweep.py`（バースト検出は `burst.py`） |
-| 5 | SDR++ / GNU Radio 連携 | [~] WAV 出力・SigMF（gr-sigmf）。ライブ（SoapySDR）は未実装 |
-| 6 | BLE・Zigbee・独自無線の復調 | [ ]（実績: 802.11b ビーコン `host/dsss.py`） |
+| 5 | SDR++ / GNU Radio 連携 | [~] WAV 出力・SigMF（gr-sigmf）・WebSerial ビューア（web/）。SoapySDR は設計のみ（docs/sdr_capture.md） |
+| 6 | BLE・Zigbee・独自無線の復調 | [~] BLE 広告 CRC OK（`host/ble.py`, RX-C3-022）。Zigbee 未着手。実績: 802.11b ビーコン `host/dsss.py` |

@@ -84,3 +84,15 @@
   capture_path: captures/test_2437_{16M,250k,1M}.sigmf-*, captures/sweep_full.json, captures/lte_b1_2140_*
   result: 250 kS/s 76.8% coverage, 1 MS/s 43.8% (USB bound), 16 MS/s snapshots 1.5%; beacons decode from SigMF; sweep finds LTE B1/B3/B41 and Wi-Fi
   interpretation: capture / replay / spectrum goals met within the C3 limits; 5/6 LO region has an internal spur comb
+- experiment_id: RX-C3-022
+  title: BLE 1M advertising decode from SigMF (GFSK, AA, whitening, CRC-24)
+  date: 2026-10-18
+  capture_path: captures/ble_24{02,26,80}_{2M,4M}_ev.sigmf-*, logs/RX-C3-022_ble_decode.txt
+  result: 2 MS/s 5 CRC-OK packets; 4 MS/s 30 CRC-OK packets, 5 AdvA; conj + MSB-first CRC confirmed
+  interpretation: verified; the dump engine I/Q supports GFSK demodulation as well as DSSS
+- experiment_id: RX-C3-023
+  title: Event-mode streaming (threshold) and sweep confidence classes
+  date: 2026-10-18
+  capture_path: captures/ble_*_ev.sigmf-meta (block_pitch 1.186 ms), captures/sweep_conf.json, logs/RX-C3-023_sweep_conf.txt
+  result: 86% of the timeline monitored while sending only energetic blocks; sweep tags internal-spur / confirmed / unconfirmed / single-LO
+  interpretation: sending only useful blocks is the only effective "compression" within the C3 compute budget

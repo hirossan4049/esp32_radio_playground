@@ -32,7 +32,7 @@ class SigMFWriter:
         self.captures.append({"core:sample_start": self.nsamples, "core:frequency": self.freq,
                               "core:datetime": when.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                               f"{EXT}:t_us": int(t_us), f"{EXT}:seq": int(seq), f"{EXT}:block_samples": n, f"{EXT}:flags": int(flags)})
-        self.data.write(samples_bytes); self.nsamples += n
+        if n: self.data.write(samples_bytes); self.nsamples += n
     def annotate(self, start, count, **kw):
         a = {"core:sample_start": int(start), "core:sample_count": int(count)}; a.update(kw); self.annotations.append(a)
     def close(self, extra_global=None):
@@ -43,7 +43,9 @@ class SigMFWriter:
             gaps = [((b - a) & 0xFFFFFFFF) for a, b in zip(ts, ts[1:])]
             g[f"{EXT}:blocks"] = len(self.captures); g[f"{EXT}:total_samples"] = self.nsamples
             if gaps: g[f"{EXT}:block_pitch_us"] = {"min": min(gaps), "median": sorted(gaps)[len(gaps) // 2], "max": max(gaps)}
-            blk_us = self.captures[0][f"{EXT}:block_samples"] / self.rate * 1e6
+            full = [c for c in self.captures if c[f"{EXT}:block_samples"]]
+            g[f"{EXT}:blocks_with_data"] = len(full)
+            blk_us = (full[0] if full else self.captures[0])[f"{EXT}:block_samples"] / self.rate * 1e6
             g[f"{EXT}:block_duration_us"] = blk_us
             if gaps: g[f"{EXT}:duty_cycle"] = round(blk_us / (sorted(gaps)[len(gaps) // 2]), 4)
         json.dump({"global": g, "captures": self.captures, "annotations": self.annotations}, open(self.base + ".sigmf-meta", "w"), indent=1)
@@ -58,5 +60,5 @@ def read_sigmf(path):
     caps = meta["captures"]; blocks = []
     for i, c in enumerate(caps):
         s0 = c["core:sample_start"]; s1 = caps[i + 1]["core:sample_start"] if i + 1 < len(caps) else len(x)
-        blocks.append((c.get(f"{EXT}:t_us", 0), x[s0:s1]))
+        if s1 > s0 or c.get(f"{EXT}:block_samples", 1) == 0: blocks.append((c.get(f"{EXT}:t_us", 0), x[s0:s1]))
     return meta, blocks

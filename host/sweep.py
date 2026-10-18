@@ -16,7 +16,7 @@ from esp32sdr import Device, lo_plan
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--start", type=float, default=1842); ap.add_argument("--stop", type=float, default=2803); ap.add_argument("--step", type=float, default=20)
+    ap.add_argument("--start", type=float, default=1842); ap.add_argument("--stop", type=float, default=2803); ap.add_argument("--step", type=float, default=10, help="MHz; below 2*view every RF bin is seen from two LOs, which is what confirms a signal")
     ap.add_argument("--rate", type=float, default=40e6); ap.add_argument("--gain", type=int, default=50); ap.add_argument("--blocks", type=int, default=2)
     ap.add_argument("--nfft", type=int, default=1024); ap.add_argument("--out", default="captures/sweep"); ap.add_argument("--thresh", type=float, default=6.0)
     ap.add_argument("--view", type=float, default=10.0, help="use +-view MHz of each snapshot")
@@ -46,6 +46,21 @@ def main():
                 i = int(b - rf_bins[0]); v = float(np.mean(P[m])); acc[i] = v if np.isnan(acc[i]) else min(acc[i], v)   # overlap: keep the lower (safer) value
         rows.append(dict(lo_mhz=float(lo), psd_db=P.round(2).tolist(), floor_db=float(np.median(P[sel])), blocks=len(Ps)))
         print(f"LO {lo:7.1f} MHz  floor {rows[-1]['floor_db']:6.1f} dB  blocks {len(Ps)}", flush=True)
+    # --- internal-spur map: baseband bins that are hot (> thresh above the row floor) in many LOs are LO-relative, i.e. internal
+    M = np.array([r["psd_db"] for r in rows]); rowfloor = np.median(M, axis=1, keepdims=True); hotbb = (M - rowfloor) > a.thresh
+    bb_frac = hotbb.mean(axis=0)                        # fraction of LOs in which each baseband bin is hot
+    internal_bins = [(float(f[i]), float(bb_frac[i])) for i in range(len(f)) if bb_frac[i] > 0.5 and abs(f[i]) <= a.view]
+    # --- per RF bin: how many distinct LOs saw it hot (overlap confirms an external signal)
+    seen = np.zeros(len(rf_bins), int); hot_from = np.zeros(len(rf_bins), int)
+    gfloor = float(np.median(np.concatenate([np.array(r["psd_db"])[np.abs(f) <= a.view] for r in rows])))   # sweep-wide floor: wide signals lift a whole row
+    for r in rows:
+        P = np.array(r["psd_db"]); rf = r["lo_mhz"] - f; sel = np.abs(f) <= a.view; fl = gfloor
+        for b in rf_bins:
+            m = sel & (rf >= b) & (rf < b + 1)
+            if m.any():
+                i = int(b - rf_bins[0]); seen[i] += 1
+                bbhot = np.mean(bb_frac[m]) > 0.5           # mostly internal-spur bins
+                if np.mean(P[m]) - fl > a.thresh and not bbhot: hot_from[i] += 1
     valid = ~np.isnan(acc); floor = np.median(acc[valid]); dev_db = acc - floor
     hot = valid & (dev_db > a.thresh); sigs = []
     i = 0
@@ -53,11 +68,17 @@ def main():
         if hot[i]:
             j = i
             while j + 1 < len(rf_bins) and hot[j + 1]: j += 1
-            sigs.append(dict(rf_start_mhz=float(rf_bins[i]), rf_stop_mhz=float(rf_bins[j] + 1), peak_db=float(np.nanmax(dev_db[i:j + 1])), mean_db=float(np.nanmean(dev_db[i:j + 1])))); i = j + 1
+            sb = seen[i:j + 1]; hb = hot_from[i:j + 1]
+            if hb.max() == 0: conf = "internal-spur"           # only hot in LO-relative bins
+            elif (sb >= 2).any() and (hb >= 2).any(): conf = "confirmed"   # seen hot from two LOs at the same RF
+            elif (sb >= 2).any(): conf = "unconfirmed"          # seen from two LOs but hot in only one
+            else: conf = "single-LO"
+            sigs.append(dict(rf_start_mhz=float(rf_bins[i]), rf_stop_mhz=float(rf_bins[j] + 1), peak_db=float(np.nanmax(dev_db[i:j + 1])), mean_db=float(np.nanmean(dev_db[i:j + 1])), confidence=conf)); i = j + 1
         else: i += 1
     print(f"\nsweep floor {floor:.1f} dB; signals > +{a.thresh} dB:")
-    for s_ in sigs: print(f"  {s_['rf_start_mhz']:7.0f}..{s_['rf_stop_mhz']:7.0f} MHz  peak {s_['peak_db']:+5.1f} dB  mean {s_['mean_db']:+5.1f} dB")
-    json.dump(dict(rate=fs, gain=a.gain, nfft=a.nfft, f_mhz=f.tolist(), rows=rows, rf_bins_mhz=rf_bins.tolist(), rf_psd_db=[None if np.isnan(v) else round(float(v), 2) for v in acc], floor_db=float(floor), signals=sigs), open(a.out + ".json", "w"))
+    for s_ in sigs: print(f"  {s_['rf_start_mhz']:7.0f}..{s_['rf_stop_mhz']:7.0f} MHz  peak {s_['peak_db']:+5.1f} dB  mean {s_['mean_db']:+5.1f} dB  [{s_['confidence']}]")
+    print("internal (LO-relative) baseband bins, MHz: " + ", ".join(f"{b:+.2f}({fr:.0%})" for b, fr in internal_bins[:20]))
+    json.dump(dict(rate=fs, gain=a.gain, nfft=a.nfft, f_mhz=f.tolist(), rows=rows, rf_bins_mhz=rf_bins.tolist(), rf_psd_db=[None if np.isnan(v) else round(float(v), 2) for v in acc], floor_db=float(floor), signals=sigs, internal_baseband_bins=internal_bins), open(a.out + ".json", "w"))
     import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 7), gridspec_kw={"height_ratios": [1, 1.6]})
     ax1.plot(rf_bins + 0.5, acc - floor, lw=0.9); ax1.axhline(a.thresh, color="r", lw=0.6, ls="--"); ax1.set_ylabel("dB above floor"); ax1.grid(alpha=0.3)

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESP32-C3 SDR Viewer</title>
+<style>
+  :root { --bg:#0f1115; --fg:#e6e6e6; --mut:#9aa; --acc:#4fc3f7; --card:#171a21; }
+  body { margin:0; font:14px/1.4 -apple-system, "Helvetica Neue", sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:10px 16px; border-bottom:1px solid #2a2f3a; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  header h1 { font-size:16px; margin:0 12px 0 0; }
+  label { color:var(--mut); } input, select, button { background:#22262f; color:var(--fg); border:1px solid #3a4150; border-radius:4px; padding:4px 6px; font-size:13px; }
+  input[type=number] { width:88px; } button { cursor:pointer; } button.primary { background:#1d4e89; border-color:#2b6cb0; }
+  main { padding:12px 16px; display:grid; gap:10px; grid-template-columns: 1fr; }
+  canvas { width:100%; background:#000; border:1px solid #2a2f3a; display:block; }
+  #spec { height:220px; } #wf { height:420px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; color:var(--mut); }
+  .row b { color:var(--fg); }
+  #log { font:12px/1.35 ui-monospace, Menlo, monospace; background:var(--card); padding:8px; height:120px; overflow:auto; white-space:pre-wrap; border:1px solid #2a2f3a; }
+  .warn { color:#ffb74d; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ESP32-C3 SDR</h1>
+  <button id="connect" class="primary">接続 (WebSerial)</button>
+  <label>LO MHz <input id="freq" type="number" value="2437" step="0.001" min="1836" max="2803"></label>
+  <label>rate <select id="rate">
+    <option value="16000000">16 MS/s snapshot (1.024 ms)</option>
+    <option value="40000000">40 MS/s snapshot (410 µs)</option>
+    <option value="80000000">80 MS/s snapshot (205 µs)</option>
+    <option value="4000000">4 MS/s duty int8</option>
+    <option value="2000000">2 MS/s duty int8</option>
+    <option value="1000000">1 MS/s duty int8</option>
+    <option value="250000" selected>250 kS/s duty int8 (~77%)</option>
+    <option value="62500">62.5 kS/s duty int8</option>
+  </select></label>
+  <label>gain <input id="gain" type="number" value="30" min="0" max="60"></label>
+  <label>thr <input id="thr" type="number" value="0" min="0" max="500" title="event mode: skip blocks below this mean |I|+|Q| (0 = all)"></label>
+  <label>FFT <select id="nfft"><option>256</option><option selected>512</option><option>1024</option><option>2048</option></select></label>
+  <label><input id="rf" type="checkbox" checked> RF 表示 (LO−RF を反転)</label>
+  <button id="start" disabled>開始</button>
+  <button id="stop" disabled>停止</button>
+</header>
+<main>
+  <div class="row"><span>状態: <b id="st">未接続</b></span><span>フレーム/s: <b id="fps">0</b></span><span>捕捉率: <b id="duty">–</b></span><span>欠落/切捨て: <b id="drops">0 / 0</b></span><span>ピーク: <b id="peak">–</b></span><span id="warn" class="warn"></span></div>
+  <canvas id="spec"></canvas>
+  <canvas id="wf"></canvas>
+  <div id="log"></div>
+</main>
+<script>
+"use strict";
+// ---- device facts (docs/sdr_capture.md): LO range, 5/6 mode planning, rate table ----
+const PLL_MIN = 2203e6, PLL_MAX = 2803e6;
+function loPlan(hz) {
+  if (hz >= PLL_MIN && hz <= PLL_MAX) return { pllKhz: Math.round(hz / 1e3), alt: false };
+  const p = hz * 6 / 5;
+  if (p >= PLL_MIN && p <= PLL_MAX) return { pllKhz: Math.round(p / 1e3), alt: true };
+  throw new Error(`LO ${hz/1e6} MHz は同調範囲外 (1836..2803 MHz)`);
+}
+const FULL = { 80000000: 0x03fff, 40000000: 0x0bfff, 16000000: 0x13fff };
+const SHIFT = { 4: 2, 8: 3, 16: 4, 32: 5, 64: 6, 128: 7, 256: 8 };
+function ratePlan(rate) {
+  if (FULL[rate] !== undefined) return { ctrl: FULL[rate], decim: 1, shift: 0, mode: "snapshot" };
+  const d = 16000000 / rate;
+  if (SHIFT[d] === undefined) throw new Error("unsupported rate");
+  return { ctrl: 0x13fff, decim: d, shift: SHIFT[d], mode: "duty" };
+}
+// ---- serial ----
+let port, reader, writer, running = false, textBuf = "";
+const log = (m, cls) => { const el = document.getElementById("log"); const d = document.createElement("div"); if (cls) d.className = cls; d.textContent = m; el.appendChild(d); el.scrollTop = el.scrollHeight; };
+const enc = new TextEncoder();
+async function send(line) { await writer.write(enc.encode(line + "\n")); }
+async function cmdWait(line, pattern, ms = 1500) {
+  textBuf = ""; await send(line);
+  const t0 = performance.now();
+  while (performance.now() - t0 < ms) { if (textBuf.includes(pattern)) return textBuf; await new Promise(r => setTimeout(r, 20)); }
+  throw new Error(`no reply to ${line}: ${textBuf.slice(-80)}`);
+}
+let pump = null;
+async function startPump() {   // single reader loop: text mode fills textBuf, stream mode feeds the frame parser
+  reader = port.readable.getReader();
+  pump = (async () => {
+    try { while (true) { const { value, done } = await reader.read(); if (done) break; if (value) onBytes(value); } }
+    catch (e) { log("read error: " + e.message); }
+  })();
+}
+document.getElementById("connect").onclick = async () => {
+  if (!("serial" in navigator)) { log("このブラウザは WebSerial 非対応です (Chrome/Edge を使用)", "warn"); return; }
+  try {
+    port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x303a }] });
+    await port.open({ baudRate: 115200 });
+    writer = port.writable.getWriter(); await startPump();
+    const rep = await cmdWait("INFO", "RXPROBE"); log(rep.trim().split("\n").filter(l => l.startsWith("RXPROBE"))[0]);
+    document.getElementById("st").textContent = "接続"; document.getElementById("start").disabled = false;
+  } catch (e) { log("接続失敗: " + e.message, "warn"); }
+};
+// ---- frame parser ----
+let bin = new Uint8Array(0), binMode = false, frames = 0, drops = 0, trunc = 0, lastT = null, tHist = [], fpsT = performance.now(), fpsN = 0;
+function onBytes(chunk) {
+  if (!binMode) { textBuf += new TextDecoder().decode(chunk); if (textBuf.length > 20000) textBuf = textBuf.slice(-10000); return; }
+  const nb = new Uint8Array(bin.length + chunk.length); nb.set(bin); nb.set(chunk, bin.length); bin = nb;
+  for (;;) {
+    let k = indexOfMagic(bin);
+    if (k < 0) { const s = new TextDecoder().decode(bin); if (s.includes("STREAM2 end")) { log(s.slice(s.indexOf("STREAM2 end")).split("\n")[0]); finish(); } if (bin.length > 65536) bin = bin.slice(-65536); return; }
+    if (k > 0) { const s = new TextDecoder().decode(bin.slice(0, k)); if (s.includes("STREAM2 start")) log(s.trim().split("\n").find(l => l.startsWith("STREAM2 start"))); else if (frames) drops++; bin = bin.slice(k); }
+    if (bin.length < 16) return;
+    const dv = new DataView(bin.buffer, bin.byteOffset, 16);
+    const seq = dv.getUint32(4, true), tus = dv.getUint32(8, true), nsamp = dv.getUint16(12, true), fmt = bin[14], flags = bin[15];
+    const plen = nsamp * (fmt ? 4 : 2);
+    if (bin.length < 16 + plen) return;
+    const nxt = bin.slice(16 + plen, 16 + plen + 4);
+    if (nxt.length === 4 && !(nxt[0] === 69 && nxt[1] === 83 && nxt[2] === 80 && nxt[3] === 66) && !(nxt[0] === 13 && nxt[1] === 10)) { drops++; bin = bin.slice(4); continue; }
+    if (flags & 1) trunc++;
+    onFrame(seq, tus, nsamp, fmt, flags, bin.slice(16, 16 + plen)); bin = bin.slice(16 + plen);
+  }
+}
+function indexOfMagic(a) { for (let i = 0; i + 3 < a.length; i++) if (a[i] === 69 && a[i + 1] === 83 && a[i + 2] === 80 && a[i + 3] === 66) return i; return -1; }
+// ---- DSP ----
+let fs = 250000, lo = 2437e6, nfft = 512, re, im, win;
+function fft(re, im) {   // in-place radix-2
+  const n = re.length; for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+  for (let len = 2; len <= n; len <<= 1) { const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let j = 0; j < len / 2; j++) { const a = i + j, b = a + len / 2; const tr = re[b] * cr - im[b] * ci, ti = re[b] * ci + im[b] * cr; re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti; const nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr; } } }
+}
+function psdOf(samples, fmt) {   // average periodogram over the block, returns dB array (fftshifted, index 0 = -fs/2)
+  const n = fmt ? samples.length / 4 : samples.length / 2; const out = new Float32Array(nfft); let segs = 0;
+  const dv = new DataView(samples.buffer, samples.byteOffset, samples.byteLength);
+  let mi = 0, mq = 0; for (let i = 0; i < n; i++) { mi += fmt ? dv.getInt16(4 * i, true) : dv.getInt8(2 * i); mq += fmt ? dv.getInt16(4 * i + 2, true) : dv.getInt8(2 * i + 1); } mi /= n; mq /= n;
+  for (let s0 = 0; s0 + nfft <= n; s0 += nfft) {
+    for (let i = 0; i < nfft; i++) { const I = (fmt ? dv.getInt16(4 * (s0 + i), true) : dv.getInt8(2 * (s0 + i))) - mi, Q = (fmt ? dv.getInt16(4 * (s0 + i) + 2, true) : dv.getInt8(2 * (s0 + i) + 1)) - mq; re[i] = I * win[i]; im[i] = Q * win[i]; }
+    fft(re, im); for (let i = 0; i < nfft; i++) out[i] += re[i] * re[i] + im[i] * im[i]; segs++;
+  }
+  if (!segs) { for (let i = 0; i < nfft; i++) { re[i] = 0; im[i] = 0; } const m = Math.min(n, nfft); for (let i = 0; i < m; i++) { re[i] = ((fmt ? dv.getInt16(4 * i, true) : dv.getInt8(2 * i)) - mi) * win[i]; im[i] = ((fmt ? dv.getInt16(4 * i + 2, true) : dv.getInt8(2 * i + 1)) - mq) * win[i]; } fft(re, im); for (let i = 0; i < nfft; i++) out[i] = re[i] * re[i] + im[i] * im[i]; segs = 1; }
+  const db = new Float32Array(nfft); for (let i = 0; i < nfft; i++) db[(i + nfft / 2) % nfft] = 10 * Math.log10(out[i] / segs + 1e-6);
+  return db;
+}
+// ---- drawing ----
+const spec = document.getElementById("spec"), wf = document.getElementById("wf");
+let wfImg, wfCtx, specCtx, rowsDrawn = 0, avg = null, vmin = 0, vmax = 60;
+function setupCanvases() { for (const c of [spec, wf]) { c.width = c.clientWidth * devicePixelRatio; c.height = c.clientHeight * devicePixelRatio; } specCtx = spec.getContext("2d"); wfCtx = wf.getContext("2d"); wfCtx.fillStyle = "#000"; wfCtx.fillRect(0, 0, wf.width, wf.height); }
+function color(v) { const t = Math.max(0, Math.min(1, (v - vmin) / (vmax - vmin))); const r = Math.round(255 * Math.min(1, Math.max(0, 1.5 * t - 0.4))), g = Math.round(255 * Math.min(1, Math.max(0, 1.5 * t - 0.1))), b = Math.round(255 * Math.min(1, Math.max(0, 0.6 + 1.2 * t - 1.6 * t * t * 1.2))); return `rgb(${r},${g},${b})`; }
+function drawSpec(db) {
+  const W = spec.width, H = spec.height, rfMode = document.getElementById("rf").checked; specCtx.fillStyle = "#000"; specCtx.fillRect(0, 0, W, H);
+  if (!avg) avg = Float32Array.from(db); else for (let i = 0; i < nfft; i++) avg[i] = 0.8 * avg[i] + 0.2 * db[i];
+  let lo_ = Infinity, hi_ = -Infinity; for (const v of avg) { if (v < lo_) lo_ = v; if (v > hi_) hi_ = v; } vmin = lo_ - 2; vmax = hi_ + 5;
+  specCtx.strokeStyle = "#4fc3f7"; specCtx.lineWidth = 1.2 * devicePixelRatio; specCtx.beginPath();
+  for (let i = 0; i < nfft; i++) { const idx = rfMode ? nfft - 1 - i : i; const x = i / (nfft - 1) * W, y = H - (avg[idx] - vmin) / (vmax - vmin) * H; i ? specCtx.lineTo(x, y) : specCtx.moveTo(x, y); }
+  specCtx.stroke();
+  specCtx.fillStyle = "#aab"; specCtx.font = `${11 * devicePixelRatio}px sans-serif`;
+  for (let k = 0; k <= 8; k++) { const x = k / 8 * W; const bb = (-0.5 + k / 8) * fs; const label = rfMode ? ((lo + (bb)) / 1e6).toFixed(3) : (bb / 1e6).toFixed(3); specCtx.fillText(label, Math.min(x, W - 60 * devicePixelRatio), H - 4 * devicePixelRatio); }
+  specCtx.fillText(rfMode ? "RF MHz (LO−RF を反転)" : "baseband MHz (LO−RF)", 6 * devicePixelRatio, 14 * devicePixelRatio);
+  let pk = 0; for (let i = 1; i < nfft; i++) if (avg[i] > avg[pk]) pk = i;
+  const bbPk = (pk / nfft - 0.5) * fs; document.getElementById("peak").textContent = `${(avg[pk]).toFixed(1)} dB @ ${rfMode ? ((lo - bbPk) / 1e6).toFixed(4) + " MHz RF" : (bbPk / 1e6).toFixed(4) + " MHz"}`;
+}
+function drawWfRow(db, gapRows) {
+  const W = wf.width, H = wf.height, rfMode = document.getElementById("rf").checked, rows = 1 + gapRows;
+  wfCtx.drawImage(wf, 0, 0, W, H - rows * devicePixelRatio, 0, rows * devicePixelRatio, W, H - rows * devicePixelRatio);
+  if (gapRows) { wfCtx.fillStyle = "#222"; wfCtx.fillRect(0, devicePixelRatio, W, gapRows * devicePixelRatio); }   // dark rows = time with no data
+  const img = wfCtx.createImageData(W, Math.max(1, Math.round(devicePixelRatio)));
+  for (let x = 0; x < W; x++) { let i = Math.floor(x / W * nfft); if (rfMode) i = nfft - 1 - i; const t = Math.max(0, Math.min(1, (db[i] - vmin) / (vmax - vmin)));
+    const r = Math.round(255 * Math.min(1, Math.max(0, 2 * t - 0.8))), g = Math.round(255 * Math.min(1, Math.max(0, 2 * t - 0.3))), b = Math.round(255 * Math.min(1, t < 0.5 ? 0.3 + 1.4 * t : 1.7 - 1.4 * t));
+    for (let y = 0; y < img.height; y++) { const o = 4 * (y * W + x); img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 255; } }
+  wfCtx.putImageData(img, 0, 0);
+}
+function onFrame(seq, tus, nsamp, fmt, flags, payload) {
+  frames++; fpsN++;
+  const now = performance.now(); if (now - fpsT > 1000) { document.getElementById("fps").textContent = (fpsN * 1000 / (now - fpsT)).toFixed(1); fpsN = 0; fpsT = now; }
+  let gapRows = 0;
+  if (lastT !== null) { const dt = (tus - lastT) >>> 0; tHist.push(dt); if (tHist.length > 200) tHist.shift();
+    const blockUs = 16384 / 16e6 * 1e6 * (fs >= 16e6 ? 16e6 / fs : 1); gapRows = Math.min(6, Math.max(0, Math.round((dt - blockUs) / blockUs)));   // one dark row per missing block-time
+    const med = tHist.slice().sort((a, b) => a - b)[tHist.length >> 1]; document.getElementById("duty").textContent = (100 * Math.min(1, blockUs / med)).toFixed(0) + "% (" + (med / 1000).toFixed(2) + " ms/ブロック)"; }
+  lastT = tus; document.getElementById("drops").textContent = `${drops} / ${trunc}`;
+  if (!nsamp) { if (flags & 2) {/* skipped (event mode) */} return; }
+  const db = psdOf(payload, fmt); drawSpec(db); drawWfRow(db, gapRows);
+}
+// ---- control ----
+document.getElementById("start").onclick = async () => {
+  try {
+    lo = Math.round(parseFloat(document.getElementById("freq").value) * 1e6); const rate = parseInt(document.getElementById("rate").value); const gain = parseInt(document.getElementById("gain").value); const thr = parseInt(document.getElementById("thr").value) || 0;
+    nfft = parseInt(document.getElementById("nfft").value); re = new Float32Array(nfft); im = new Float32Array(nfft); win = Float32Array.from({ length: nfft }, (_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (nfft - 1)));
+    const plan = loPlan(lo), rp = ratePlan(rate); fs = rate; avg = null; frames = drops = trunc = 0; lastT = null; tHist = []; setupCanvases();
+    binMode = false;
+    await cmdWait(`TUNE ${plan.pllKhz}`, "OK TUNE");
+    const rep = await cmdWait("I2C 65 0", "I2C"); const cur = parseInt(rep.trim().split("\n").filter(l => l.startsWith("I2C")).pop().split("=").pop(), 16); const want = plan.alt ? (cur | 0x10) : (cur & ~0x10);
+    if (want !== cur) await cmdWait(`I2CW 65 0 ${want.toString(16).padStart(2, "0")}`, "OK", 800).catch(() => {});
+    await cmdWait(`GAIN ${gain}`, "OK GAIN"); await cmdWait("WR 60033d90 000c2040", "OK", 800).catch(() => {});
+    document.getElementById("warn").textContent = (rp.ctrl === 0x13fff ? "16 MS/s 系は反エイリアス無し (8〜11 MHz が折り返す)。" : "") + (plan.alt ? ` 5/6 モード (PLL ${(plan.pllKhz / 1e3).toFixed(3)} MHz)。` : "") + " ブロック間には取得していない時間があります (暗い行)。";
+    log(`start: LO ${lo / 1e6} MHz (${plan.alt ? "5/6" : "direct"}), ${rate} S/s ${rp.mode}, gain ${gain}, thr ${thr}`);
+    bin = new Uint8Array(0); binMode = true; running = true;
+    await send(`STREAM2 ${rp.ctrl.toString(16)} 16384 ${rp.decim} ${rp.shift} 3600000 ${thr}`);
+    document.getElementById("start").disabled = true; document.getElementById("stop").disabled = false; document.getElementById("st").textContent = "受信中";
+  } catch (e) { log("開始失敗: " + e.message, "warn"); binMode = false; }
+};
+async function finish() { binMode = false; running = false; document.getElementById("start").disabled = false; document.getElementById("stop").disabled = true; document.getElementById("st").textContent = "接続"; }
+document.getElementById("stop").onclick = async () => { await writer.write(enc.encode("x")); setTimeout(finish, 500); };
+window.addEventListener("resize", () => { if (running) setupCanvases(); });
+setupCanvases();
+log("WebSerial ビューア: Chrome/Edge で開き「接続」→ ESP32-C3 (303a:1001) を選択。file:// でも動作しますが、動かない場合は python3 -m http.server で http://localhost から開いてください。");
+</script>
+</body>
+</html>

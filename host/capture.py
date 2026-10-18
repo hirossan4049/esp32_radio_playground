@@ -23,6 +23,7 @@ def main():
     ap.add_argument("--gain", type=int, default=30, help="receiver gain index 0..60 (about 1 dB/step; -41 dBm input saturates above 40)")
     ap.add_argument("--duration", type=float, default=5.0, help="seconds")
     ap.add_argument("--output", required=True, help="basename for .sigmf-data/.sigmf-meta")
+    ap.add_argument("--thr", type=int, default=0, help="event mode: only send blocks whose mean |I|+|Q| exceeds this (0 = all); skipped blocks leave a zero-length capture entry")
     ap.add_argument("--port", default=None); ap.add_argument("--quiet", action="store_true")
     a = ap.parse_args()
     freq_hz = int(round(a.freq * 1e6)); rate = int(round(a.rate))
@@ -35,7 +36,7 @@ def main():
              "esp32c3:iq_convention": "I+jQ = LO - RF (spectrum mirrored relative to RF)",
              "esp32c3:measured_rate_hz": {16000000: 15995000, 40000000: 39970000, 80000000: 79850000}.get(rate if mode == "snapshot" else 16000000, None),
              "esp32c3:alias_warning": "16 MS/s path is a 1/5 decimation without anti-alias filter; analog passband +-11 MHz folds 8..11 MHz into the band" if ctrl == 0x13fff else None,
-             "esp32c3:gaps": "blocks are not contiguous; see captures[] timestamps"}
+             "esp32c3:gaps": "blocks are not contiguous; see captures[] timestamps", "esp32c3:event_threshold": a.thr}
     extra = {k: v for k, v in extra.items() if v is not None}
     w = SigMFWriter(a.output, actual, freq_hz, "ci16_le" if mode == "snapshot" else "ci8", hw,
                     description=f"{a.freq} MHz, gain {a.gain}, {mode} mode, {a.duration} s", extra=extra)
@@ -44,7 +45,7 @@ def main():
         w.add_block(payload, t_us, seq, flags); n[0] += 1
         if not a.quiet and n[0] % (5 if mode == "snapshot" else 200) == 0:
             print(f"\r  {n[0]} blocks, {w.nsamples} samples, {time.time()-t_start:.1f} s", end="", flush=True)
-    trailer = dev.stream(rate, a.duration, on_frame, status=None if a.quiet else print)
+    trailer = dev.stream(rate, a.duration, on_frame, status=None if a.quiet else print, thr=a.thr)
     meta = w.close({"esp32c3:stream_trailer": trailer})
     print(f"\nwrote {w.nsamples} samples in {n[0]} blocks -> {meta}")
     print(f"  mode {mode}, rate {actual} S/s, LO {a.freq} MHz ({'5/6 mode, PLL %.3f MHz' % (pll_khz/1e3) if alt else 'direct'}), gain {a.gain}")

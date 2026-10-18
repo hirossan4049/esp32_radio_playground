@@ -14,7 +14,7 @@ BLOCK_WORDS = 16384
 CYCLES_PER_SEC = 160e6
 # nominal rates and the ctrl word that selects them; measured 79.85 / 39.97 / 15.995 MS/s
 FULL_RATES = {80_000_000: 0x03fff, 40_000_000: 0x0bfff, 16_000_000: 0x13fff}
-DECIMS = (16, 32, 64, 128, 256)
+DECIMS = (4, 8, 16, 32, 64, 128, 256)          # 4 MS/s .. 62.5 kS/s int8; above 250 kS/s USB limits the coverage
 RATES = sorted(list(FULL_RATES) + [16_000_000 // d for d in DECIMS], reverse=True)
 PLL_MIN_HZ, PLL_MAX_HZ = 2_203_000_000, 2_803_000_000
 LO_MIN_HZ, LO_MAX_HZ = int(PLL_MIN_HZ * 5 / 6), PLL_MAX_HZ
@@ -75,16 +75,16 @@ class Device:
         rate = int(rate)
         if rate in FULL_RATES: return FULL_RATES[rate], 1, 0, rate, "snapshot"
         for d in DECIMS:
-            if 16_000_000 // d == rate: return 0x13fff, d, {16: 4, 32: 5, 64: 6, 128: 7, 256: 8}[d], rate, "duty"
+            if 16_000_000 // d == rate: return 0x13fff, d, {4: 2, 8: 3, 16: 4, 32: 5, 64: 6, 128: 7, 256: 8}[d], rate, "duty"
         raise ValueError(f"unsupported rate {rate}; choose one of {RATES}")
 
-    def stream(self, rate, duration_s, on_frame, status=None):
+    def stream(self, rate, duration_s, on_frame, status=None, thr=0):
         """Run STREAM2 and call on_frame(seq, t_us, fmt, flags, payload_bytes) per frame.
         Returns the trailer dict (seq, sent, truncated)."""
         ctrl, decim, shift, actual, mode = self.plan_rate(rate)
         ms = int(duration_s * 1000)
         self.s.reset_input_buffer(); self.s.timeout = 5
-        self.s.write(f"STREAM2 {ctrl:x} {BLOCK_WORDS} {decim} {shift} {ms}\n".encode())
+        self.s.write(f"STREAM2 {ctrl:x} {BLOCK_WORDS} {decim} {shift} {ms} {int(thr)}\n".encode())
         # header line
         hdr = b""
         dl = time.time() + 5
@@ -127,5 +127,5 @@ class Device:
             e = rest.find(b"STREAM2 end"); trailer = rest[e:].split(b"\r\n")[0].decode(errors="replace") if e >= 0 else "STREAM2 end (no trailer)"
         self.s.timeout = 2
         d = dict(kv.split("=", 1) for kv in trailer.split()[2:] if "=" in kv)
-        d.update(frames=frames, resyncs=resyncs, mode=mode, decim=decim, shift=shift, ctrl=ctrl, actual_rate=actual)
+        d.update(frames=frames, resyncs=resyncs, mode=mode, decim=decim, shift=shift, ctrl=ctrl, actual_rate=actual, thr=int(thr))
         return d

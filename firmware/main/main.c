@@ -771,7 +771,7 @@ static bool stream2_write(const uint8_t *p, uint32_t n, uint32_t deadline_us)
     return true;
 }
 
-static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t shift, uint32_t total_ms)
+static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t shift, uint32_t total_ms, uint32_t thr)
 {
     if (nwords < 1024 || nwords > DUMP_BANK_WORDS || decim == 0 || decim > 1024 || (decim > 1 && (decim % 4 || nwords % decim))) { say("ERR STREAM2 args\r\n"); return; }
     const uint32_t ctrl = (ctrl_in & ~0x3FFFu) | (nwords - 1);
@@ -786,10 +786,10 @@ static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t 
     const uint32_t owner0 = rd(SRAM_OWNER);
     const uint32_t own_run = fmt ? ((owner0 & ~7u) | 2u | own_bit3) : ((owner0 & ~0xFu) | 2u);
     const volatile uint32_t *bank = fmt ? DUMP_BANK : DUMP_BANK_A;
-    uint32_t seq = 0, sent = 0, truncated = 0, prev_trunc = 0;
+    uint32_t seq = 0, sent = 0, truncated = 0, prev_trunc = 0, skipped = 0;
     int64_t t_end = esp_timer_get_time() + (int64_t)total_ms * 1000;
-    say("STREAM2 start ctrl=%08" PRIx32 " nwords=%" PRIu32 " decim=%" PRIu32 " shift=%" PRIu32 " nsamp=%" PRIu32 " fmt=%" PRIu32 " ms=%" PRIu32 " tuned=%" PRIu32 " agc=%08" PRIx32 "\r\n",
-        ctrl, nwords, decim, shift, nsamp, fmt, total_ms, tuned_khz, rd(AGC_FORCE));
+    say("STREAM2 start ctrl=%08" PRIx32 " nwords=%" PRIu32 " decim=%" PRIu32 " shift=%" PRIu32 " nsamp=%" PRIu32 " fmt=%" PRIu32 " ms=%" PRIu32 " thr=%" PRIu32 " tuned=%" PRIu32 " agc=%08" PRIx32 "\r\n",
+        ctrl, nwords, decim, shift, nsamp, fmt, total_ms, thr, tuned_khz, rd(AGC_FORCE));
     bool stop = false;
     /* first capture */
     wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
@@ -808,11 +808,25 @@ static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t 
         if (!done) {            /* restart and skip */
             wr(SRAM_OWNER, own_run); __asm__ volatile("fence rw,rw" ::: "memory"); t_us = (uint32_t)esp_timer_get_time(); dump_start(ctrl); continue;
         }
+        /* event mode: mean |I|+|Q| over every 16th word; below thr the block is not sent, only a 16-byte
+         * marker frame (nsamp = 0, flags bit1) so the host timeline stays complete */
+        bool skip = false;
+        if (thr) {
+            uint32_t acc = 0; const uint32_t *bp = (const uint32_t *)bank;
+            for (uint32_t i = 0; i < nwords; i += 16) {
+                uint32_t w = bp[i] ^ 0x00080200u; int32_t iv = (int32_t)(w & 0x3FFu) - 512, qv = (int32_t)((w >> 10) & 0x3FFu) - 512;
+                acc += (uint32_t)(iv < 0 ? -iv : iv) + (uint32_t)(qv < 0 ? -qv : qv);
+            }
+            skip = acc / (nwords / 16) < thr;
+        }
         frame[0] = 'E'; frame[1] = 'S'; frame[2] = 'P'; frame[3] = 'B';
         memcpy(frame + 4, &seq, 4); memcpy(frame + 8, &t_blk, 4);
-        frame[12] = (uint8_t)nsamp; frame[13] = (uint8_t)(nsamp >> 8); frame[14] = (uint8_t)fmt; frame[15] = (uint8_t)prev_trunc;
+        frame[12] = skip ? 0 : (uint8_t)nsamp; frame[13] = skip ? 0 : (uint8_t)(nsamp >> 8); frame[14] = (uint8_t)fmt; frame[15] = (uint8_t)(prev_trunc | (skip ? 2u : 0u));
         bool ok;
-        if (fmt) {
+        if (skip) {
+            wr(SRAM_OWNER, own_run); __asm__ volatile("fence rw,rw" ::: "memory"); t_us = (uint32_t)esp_timer_get_time(); dump_start(ctrl);
+            ok = stream2_write(frame, 16, 2000u); skipped++;
+        } else if (fmt) {
             int16_t *o = (int16_t *)(frame + 16);
             for (uint32_t i = 0; i < nwords; i++) {
                 uint32_t w = bank[i] ^ 0x00080200u;
@@ -859,7 +873,7 @@ static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t 
     wr(SRAM_OWNER, owner0);
     free(frame); free(copy);
     esp_rom_delay_us(20000);
-    say("\r\nSTREAM2 end seq=%" PRIu32 " sent=%" PRIu32 " truncated=%" PRIu32 " tuned=%" PRIu32 "\r\nEND\r\n", seq, sent, truncated, tuned_khz);
+    say("\r\nSTREAM2 end seq=%" PRIu32 " sent=%" PRIu32 " truncated=%" PRIu32 " skipped=%" PRIu32 " tuned=%" PRIu32 "\r\nEND\r\n", seq, sent, truncated, skipped, tuned_khz);
 }
 
 static bool addr_ok(uint32_t a)
@@ -955,8 +969,8 @@ static void handle(char *line)
         char *a = strsep(&s, " "); char *b = s;
         wificnt(a ? strtoul(a, NULL, 10) : 2000, b && *b == '1');
     } else if (!strcmp(cmd, "STREAM2")) {
-        char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = strsep(&s, " "); char *d = strsep(&s, " "); char *e = s;
-        stream2(a ? strtoul(a, NULL, 16) : 0x13fffu, b ? strtoul(b, NULL, 10) : 16384u, c ? strtoul(c, NULL, 10) : 64u, d ? strtoul(d, NULL, 10) : 6u, e ? strtoul(e, NULL, 10) : 2000u);
+        char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = strsep(&s, " "); char *d = strsep(&s, " "); char *e = strsep(&s, " "); char *f = s;
+        stream2(a ? strtoul(a, NULL, 16) : 0x13fffu, b ? strtoul(b, NULL, 10) : 16384u, c ? strtoul(c, NULL, 10) : 64u, d ? strtoul(d, NULL, 10) : 6u, e ? strtoul(e, NULL, 10) : 2000u, f ? strtoul(f, NULL, 10) : 0u);
     } else if (!strcmp(cmd, "OWN")) {
         say("OWN %08" PRIx32 "\r\n", rd(SRAM_OWNER));
     } else {
