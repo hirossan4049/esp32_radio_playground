@@ -102,3 +102,9 @@
   capture_path: captures/web/esp32sdr_2402000kHz_2026-10-18T05-36-49-789Z.sigmf-* (not in git), host/nrf24.py
   result: 16 BLE adverts (5 AdvA) decoded; plus a strong 1 Mbps GFSK device, ~1 MHz wide, ~400 us packets every 16.0 ms during two ~2.5 s periods, 80 us short packets; 797/964 bursts clipped at gain 40; no nRF24 ESB CRC-16 framing match; no common 32-bit sync word found
   interpretation: unidentified proprietary 2.4 GHz link (mouse/keyboard/remote class); needs a lower-gain 16 MS/s event capture and knowledge of what was operated
+- experiment_id: RX-C3-025
+  title: Lighting remote at 2402 MHz - packet structure from a 16 MS/s viewer recording (on / off / on-long-press)
+  date: 2026-10-18
+  capture_path: captures/web/esp32sdr_2402000kHz_2026-10-18T05-48-38-849Z.sigmf-* (not in git), host/pkt.py
+  result: 1 Mbps GFSK, 16 ms pitch, ~420 us packets; sync 0xADF645C7 then 0xCFBD; two alternating variants (0x4086.. and 0x6DBF..); in the 6DBF variant bytes 22-28 encode the command (on == long-press-on != off), bytes 29-36 change per press, byte 39 looks like a check byte; no standard CRC-8/16 or sum matched; not nRF24 ESB framing
+  interpretation: proprietary 2.4 GHz remote protocol; button field identified, rolling/check fields unknown
