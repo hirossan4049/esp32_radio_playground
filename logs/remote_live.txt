@@ -1,0 +1,38 @@
+15:23:59  start LO 2402 MHz rate 16000000 gain 30
+15:24:00  noise 5 -> threshold 20; gain 30
+15:24:20  segment: frames 6011 bursts 186 packets 64 clipped 0 peak 258/511
+15:24:21  noise 4 -> threshold 20; gain 30
+15:24:35  PRESS  調整   param 0x92  counter   7  session 00  votes   4 conf 0.95  bytes22-39 18 86 e5 40 00 00 00 1c 92 c6 c6 06 c1 52 62 4d c8 04
+15:24:41  PRESS  調整   明るさ↓        counter   9  session 00  votes   2 conf 1.00  bytes22-39 18 86 e5 40 00 00 00 24 63 d3 d2 bf d7 e4 7e 4d ca c8
+15:24:41  segment: frames 11203 bursts 95 packets 32 clipped 2 peak 507/511
+15:24:42  noise 7 -> threshold 20; gain 30
+15:24:46  PRESS  調整   明るさ↑        counter  11  session 00  votes   3 conf 1.00  bytes22-39 18 86 e5 40 00 00 00 2c a2 82 80 4a 86 5e 8a 4d cb 5d
+15:24:49  PRESS  消灯   param 03    counter  13  session 00  votes   2 conf 1.00  bytes22-39 18 46 e5 40 00 00 00 34 03 bf be 33 b8 0a 2a 4d ca f2
+15:25:02  segment: frames 11328 bursts 82 packets 18 clipped 2 peak 507/511
+15:25:03  noise 5 -> threshold 20; gain 30
+15:25:23  segment: frames 12134 bursts 70 packets 6 clipped 0 peak 415/511
+15:25:24  noise 5 -> threshold 20; gain 30
+15:25:36  PRESS  調整   param 0x92  counter  17  session 00  votes   4 conf 0.88  bytes22-39 18 86 e5 40 00 00 00 44 92 1e 1e 42 18 d8 4a 4d c8 03
+15:25:43  PRESS  調整   昼光色         counter  24  session 00  votes   2 conf 1.00  bytes22-39 18 86 e5 40 00 00 00 60 91 95 94 cd 92 7e 46 4d c9 82
+15:25:44  PRESS  調整   param 0x0b  counter  25  session 00  votes   3 conf 1.00  bytes22-39 18 86 e5 43 ff fc 00 64 0b 83 83 5f 86 ff 3e 4d ca ed
+15:25:44  segment: frames 11689 bursts 84 packets 23 clipped 0 peak 263/511
+15:25:45  noise 6 -> threshold 20; gain 30
+15:26:03  PRESS  調整   明るさ↓        counter   0  session 00  votes   2 conf 0.90  bytes22-39 18 86 e5 40 00 00 00 00 60 44 44 88 40 03 02 4d c9 06
+15:26:05  PRESS  点灯   param 01    counter  33  session 00  votes   3 conf 1.00  bytes22-39 18 42 e5 40 00 00 00 84 01 29 28 d5 2c ff 0e 4d cb 53
+15:26:05  segment: frames 13447 bursts 54 packets 15 clipped 0 peak 292/511
+15:26:06  noise 6 -> threshold 20; gain 30
+15:26:26  segment: frames 10335 bursts 102 packets 2 clipped 0 peak 330/511
+15:26:27  noise 5 -> threshold 20; gain 30
+15:26:48  segment: frames 9840 bursts 112 packets 26 clipped 1 peak 507/511
+15:26:49  noise 5 -> threshold 20; gain 30
+15:27:09  segment: frames 7282 bursts 158 packets 62 clipped 0 peak 393/511
+15:27:10  noise 5 -> threshold 20; gain 30
+15:27:30  segment: frames 10739 bursts 100 packets 40 clipped 2 peak 507/511
+15:27:31  noise 5 -> threshold 20; gain 30
+15:27:50  PRESS  調整   明るさ↓        counter  32  session 00  votes   4 conf 0.93  bytes22-39 18 86 e5 40 00 00 00 80 63 87 86 3b 81 01 8e 4d cb 34
+15:27:51  segment: frames 11250 bursts 92 packets 17 clipped 0 peak 315/511
+15:27:52  noise 4 -> threshold 20; gain 30
+15:28:12  segment: frames 9018 bursts 133 packets 47 clipped 0 peak 285/511
+15:28:13  noise 6 -> threshold 20; gain 30
+15:28:33  segment: frames 7045 bursts 174 packets 87 clipped 0 peak 285/511
+15:28:34  noise 5 -> threshold 20; gain 30

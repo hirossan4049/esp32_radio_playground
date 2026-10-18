@@ -1,0 +1,5 @@
+
+wrote 12468224 samples in 59817 blocks -> captures/web/remote_seq8.sigmf-meta
+  mode snapshot, rate 16000000 S/s, LO 2402.0 MHz (direct), gain 38
+  device: seq 59817 sent 59817 truncated 0 host resyncs 0
+CAPTURE DONE

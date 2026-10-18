@@ -19,7 +19,7 @@ from esp32sdr.sigmf import SigMFWriter
 import pkt, lightremote
 
 CODES = lightremote.CODES
-PARAM = {0xa1: "明るさ↑", 0xa2: "明るさ↑", 0x60: "明るさ↓", 0x63: "明るさ↓", 0x90: "昼光色", 0x91: "昼光色", 0x93: "昼光色"}
+PARAM = {0xa1: "明るさ↑", 0xa2: "明るさ↑", 0x60: "明るさ↓", 0x63: "全灯", 0x90: "昼光色", 0x91: "昼光色", 0x93: "昼光色", 0x92: "電球色"}   # byte 30 when byte 23 == 0x86
 
 def unpack_frame(payload, fmt):
     if fmt: raw = np.frombuffer(payload, dtype="<i2"); x = raw[0::2].astype(np.float32) + 1j * raw[1::2].astype(np.float32)
@@ -28,7 +28,7 @@ def unpack_frame(payload, fmt):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--freq", type=float, default=2402); ap.add_argument("--rate", type=float, default=16e6); ap.add_argument("--gain", type=int, default=30)
-    ap.add_argument("--duration", type=float, default=3600); ap.add_argument("--log", default="logs/remote_live.txt"); ap.add_argument("--out", default="captures/web/remote_live"); ap.add_argument("--chunk", type=float, default=20, help="seconds per stream segment (gain/threshold are re-evaluated between segments)")
+    ap.add_argument("--duration", type=float, default=3600); ap.add_argument("--log", default="logs/remote_live.txt"); ap.add_argument("--out", default="captures/web/remote_live"); ap.add_argument("--chunk", type=float, default=60, help="seconds per stream segment (gain/threshold are re-evaluated between segments)")
     a = ap.parse_args(); rate = int(a.rate); fullscale = 511 if rate >= 16e6 else 127
     dev = Device(); dev.tune(a.freq * 1e6); gain = a.gain; dev.set_gain(gain)
     logf = open(a.log, "a"); 
@@ -37,16 +37,20 @@ def main():
     say(f"start LO {a.freq} MHz rate {rate} gain {gain}")
     w = SigMFWriter(a.out, rate, a.freq * 1e6, "ci16_le" if rate >= 16e6 else "ci8", "ESP32-C3 remote_live", description="live remote decode", extra={"esp32c3:gain_index": gain})
     sys_t0 = time.time(); seen = collections.OrderedDict(); last_key = None; stats = dict(frames=0, bursts=0, pk=0, clip=0, weak=0, strong_peak=0.0)
+    first_segment = True; gain_changed = False; thr = 20
     while time.time() - sys_t0 < a.duration:
         # --- noise measurement (threshold 0 for 1 s): mean |I|+|Q| of the raw 10-bit words is what the firmware compares
         noise = []
+        if "thr" in locals() and stats["frames"]:
+            pass
         def on_noise(seq, t_us, fmt, flags, payload):
             if not payload: return
             x = unpack_frame(payload, fmt)   # both formats are on the raw 10-bit scale (box-car average keeps the scale), which is what the firmware threshold compares
             noise.append(float(np.abs(x.real).mean() + np.abs(x.imag).mean()))
-        dev.stream(rate, 1.0, on_noise, thr=0)
-        nz = float(np.percentile(noise, 30)) if noise else 40.0; thr = int(max(20, nz * 2.5))
-        say(f"noise {nz:.0f} -> threshold {thr}; gain {gain}")
+        if first_segment or gain_changed:
+            dev.stream(rate, 1.0, on_noise, thr=0)
+            nz = float(np.percentile(noise, 30)) if noise else 40.0; thr = int(max(20, nz * 2.5))
+            say(f"noise {nz:.0f} -> threshold {thr}; gain {gain}"); first_segment = False; gain_changed = False
         # --- event-mode segment with live decoding
         stats.update(frames=0, bursts=0, pk=0, clip=0, weak=0, strong_peak=0.0); win = []; win_t = None
         def flush_window():
@@ -82,9 +86,8 @@ def main():
         dev.stream(rate, a.chunk, on_frame, thr=thr); flush_window()
         say(f"segment: frames {stats['frames']} bursts {stats['bursts']} packets {stats['pk']} clipped {stats['clip']} peak {stats['strong_peak']:.0f}/{fullscale}")
         # --- gain adaptation
-        if stats["clip"] > 2 and gain > 10: gain -= 4; dev.set_gain(gain); say(f"gain -> {gain} (clipping)")
-        elif stats["bursts"] and stats["strong_peak"] < 0.25 * fullscale and gain < 56: gain += 4; dev.set_gain(gain); say(f"gain -> {gain} (weak)")
-        elif not stats["bursts"] and gain < 44: gain += 4; dev.set_gain(gain); say(f"gain -> {gain} (nothing heard)")
+        if stats["clip"] > 2 and gain > 10: gain -= 4; dev.set_gain(gain); gain_changed = True; say(f"gain -> {gain} (clipping)")
+        elif stats["bursts"] and stats["strong_peak"] < 0.25 * fullscale and gain < 56: gain += 4; dev.set_gain(gain); gain_changed = True; say(f"gain -> {gain} (weak)")
     w.close(); say("stop")
 
 if __name__ == "__main__":

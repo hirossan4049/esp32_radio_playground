@@ -8,7 +8,7 @@ Known layout of the "6DBF" packet type (after the sync word):
   [24..27] e5 40 00 00
   [28]     session byte (0x01 in one session, 0x02 in the next)
   [29]     counter, +4 every ~1.5 s while transmitting, continues across presses
-  [30]     parameter byte: 00/02/03 with 点灯/消灯, a1/a2 with 明るさ↑, 60 with 明るさ↓, 90..93 with 昼光色
+  [30]     parameter byte (with 0x86): a1/a2 明るさ↑, 60 明るさ↓, 63 全灯, 90/91/93 昼光色, 92 電球色; 00..03 with 点灯/消灯
   [31..36] change with every counter step (derived values; generator unknown)
   [37..38] 4d c8..cb
   [39]     check byte (algorithm unknown)
