@@ -55,9 +55,15 @@ BLE 広告のようなバースト信号はこのモード＋4 MS/s で捕まえ
 `esp32c3:t_us` はデバイス起動からの相対 µs（32 bit, 約 71 分で一周、ホストは差分で扱う）。`core:datetime` はホストが最初のフレーム受信時刻を基準に t_us で補間した UTC で、
 USB 遅延分（数十 ms）の絶対誤差がある。別セッション間の絶対時刻比較には外部同期（PPS 等）が必要で、本装置には無い。
 
-## WebSerial ビューア
-`web/esp32sdr.html` を Chrome/Edge で開く（file:// で動作しない場合は `python3 -m http.server` で http://localhost から）。「接続」で ESP32-C3（USB VID 0x303a）を選び、LO・レート・ゲイン・閾値を指定して開始。
-平均スペクトルとウォーターフォールを描画し、ブロック間の未取得時間は暗い行で表示、捕捉率・フレーム落ち・切り捨て数を表示する。5/6 モードの選択と I/Q レーン設定はページ側で行う（ファーム変更不要）。
+## WebSerial ビューア（web/esp32sdr.html ＋ web/dsp.js）
+Chrome/Edge で開く（file:// で動かない場合は `python3 -m http.server` で http://localhost から）。「接続」で ESP32-C3（USB VID 0x303a）を選ぶ。
+- **プリセット**（Wi-Fi ch1/6/11、BLE 広告 ch37/38/39、Zigbee、LTE Band 1/3/41、J-DECT、Band 1 上り）を選ぶと LO・レート・ゲイン・閾値を設定して自動開始。
+- **RF 軸表示＋バンド帯**: スペクトル背景とバンドバーに既知バンド（Wi-Fi ch、BLE 広告/データ ch、802.15.4 ch、LTE Band 1/3/41/7、J-DECT、ISM）を色分け表示。マウスオーバーで周波数・該当バンド・dB・ESP32 内部スプリアスかどうかを表示。
+- **いま見えている信号**: 各ブロックで床＋8 dB 超の連続ビンを検出し、幅と出現率で「Wi-Fi 的（約 20 MHz バースト）/ BLE・Zigbee 的（1〜2 MHz）/ LTE 下り的（広帯域・連続）/ トーン / 内部」に分類、バンド表と照合して名前を付ける。
+- **BLE 広告パケットのその場復号**: LO が 2402/2426/2480、レート 4 MS/s か 2 MS/s のとき、JS 版デコーダ（`dsp.js`、`host/ble.py` の移植。node で同一結果を確認）が AdvA・PDU 種別・AD（flags、製造者、名前）を表示。
+- **全帯域スキャン**: 1842〜2803 MHz を 10 MHz 刻み・40 MS/s で見渡し、バンド名付きの概観グラフを描く。クリックで同調してライブ開始。
+- ウォーターフォールの暗い行は未取得時間、ステータスに時間カバー率・欠落・切り捨てを表示。
+検証: `node web/test_dsp.js captures/ble_2426_4M_ev.sigmf-meta`（BLE 復号）、`node web/test_detect.js <sigmf-meta>`（検出・分類）で既存キャプチャに対してブラウザと同じコードを実行できる。
 
 ## SoapySDR 連携の設計（未実装）
 - `readStream()` は 1 ブロック = 1 バースト: `SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST` を立て、`timeNs` に t_us 由来の時刻を入れる。ブロック間はサンプルを返さない（ゼロ埋めしない）。
