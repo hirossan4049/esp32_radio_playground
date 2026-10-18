@@ -37,3 +37,26 @@
 - `host/lightremote.py`: 録音（SigMF）から同じ表を出す。`--vote` で弱信号向け多数決。
 - `host/pkt.py`: 未知信号向け。`--find` で同期語探索、`--sync` でパケット一覧と差分。
 - 送信（リプレイ）は本研究の受信専用方針により実装しない。
+
+## 同系列の別リモコンを調べる（汎用ツール host/rfproto.py）
+機器固有の決め打ちを持たない解析エンジン。受信のみ。
+```
+# 1. 録音（別リモコンでも 2402 MHz 付近・1 Mbps GFSK なら同じ手順。周波数は掃引で確認）
+python3 host/capture.py --freq 2402 --rate 16000000 --gain 25 --thr 20 --duration 120 --output captures/web/other
+
+# 2. 同期語を自動探索（プリアンブル後に最頻出する 32bit 語）
+python3 host/rfproto.py scan captures/web/other.sigmf-meta
+
+# 3. フィールド自動推定＋プロファイル保存（パケット種別ごとに FIXED/COMMAND/COUNTER/CHECK を色分け）
+python3 host/rfproto.py learn captures/web/other.sigmf-meta --name other_remote --gap 4
+#   -> profiles/other_remote.json（同期語・レート・機器ID・コマンド/カウンタ/チェックの位置）
+
+# 4. 以後、録音がどの機器かを自動判定＋デコード
+python3 host/rfproto.py id captures/web/any.sigmf-meta
+
+# 5. ライブ表示をそのプロファイルで（押した瞬間にコマンドバイトを表示）
+python3 host/remote_live.py --profile other_remote --freq 2402 --rate 16000000
+```
+`profiles/living_light.json` が今回の照明リモコンの実例。`labels` に「コマンドバイト列→ボタン名」を書くと、ライブ表示が
+`PRESS 明るさ↑ command 86 50 …` のように名前付きで出る。別機種では learn 後に同じ要領でボタン名を書き足す。
+送信（リプレイ）は本研究の受信専用方針により提供しない。

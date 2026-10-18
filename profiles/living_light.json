@@ -1,0 +1,503 @@
+{
+ "name": "living_light",
+ "rate": 1000000.0,
+ "sync": "adf645c7",
+ "nbytes": 48,
+ "main_variant": "cfbd6dbf",
+ "variants": {
+  "cfbd6dbf": {
+   "id_bytes": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    8,
+    11,
+    15,
+    22,
+    25,
+    26,
+    27,
+    28
+   ],
+   "command_bytes": [
+    23,
+    30
+   ],
+   "counter_bytes": [],
+   "check_bytes": [],
+   "id_value": "cfbd6dbfdc59e1aa1840000002",
+   "count": 187,
+   "fields": [
+    {
+     "index": 0,
+     "kind": "FIXED",
+     "detail": "0xcf"
+    },
+    {
+     "index": 1,
+     "kind": "FIXED",
+     "detail": "0xbd"
+    },
+    {
+     "index": 2,
+     "kind": "FIXED",
+     "detail": "0x6d"
+    },
+    {
+     "index": 3,
+     "kind": "FIXED",
+     "detail": "0xbf"
+    },
+    {
+     "index": 4,
+     "kind": "FIXED",
+     "detail": "0xdc"
+    },
+    {
+     "index": 5,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 6,
+     "kind": "VARYING",
+     "detail": "3 values"
+    },
+    {
+     "index": 7,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 8,
+     "kind": "FIXED",
+     "detail": "0x59"
+    },
+    {
+     "index": 9,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 10,
+     "kind": "VARYING",
+     "detail": "3 values"
+    },
+    {
+     "index": 11,
+     "kind": "FIXED",
+     "detail": "0xe1"
+    },
+    {
+     "index": 12,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 13,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 14,
+     "kind": "VARYING",
+     "detail": "5 values"
+    },
+    {
+     "index": 15,
+     "kind": "FIXED",
+     "detail": "0xaa"
+    },
+    {
+     "index": 16,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 17,
+     "kind": "VARYING",
+     "detail": "3 values"
+    },
+    {
+     "index": 18,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 19,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 20,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 21,
+     "kind": "VARYING",
+     "detail": "3 values"
+    },
+    {
+     "index": 22,
+     "kind": "FIXED",
+     "detail": "0x18"
+    },
+    {
+     "index": 23,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 24,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 25,
+     "kind": "FIXED",
+     "detail": "0x40"
+    },
+    {
+     "index": 26,
+     "kind": "FIXED",
+     "detail": "0x00"
+    },
+    {
+     "index": 27,
+     "kind": "FIXED",
+     "detail": "0x00"
+    },
+    {
+     "index": 28,
+     "kind": "FIXED",
+     "detail": "0x02"
+    },
+    {
+     "index": 29,
+     "kind": "VARYING",
+     "detail": "12 values"
+    },
+    {
+     "index": 30,
+     "kind": "VARYING",
+     "detail": "6 values"
+    },
+    {
+     "index": 31,
+     "kind": "VARYING",
+     "detail": "12 values"
+    },
+    {
+     "index": 32,
+     "kind": "VARYING",
+     "detail": "12 values"
+    },
+    {
+     "index": 33,
+     "kind": "VARYING",
+     "detail": "12 values"
+    },
+    {
+     "index": 34,
+     "kind": "VARYING",
+     "detail": "12 values"
+    },
+    {
+     "index": 35,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 36,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 37,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 38,
+     "kind": "VARYING",
+     "detail": "6 values"
+    },
+    {
+     "index": 39,
+     "kind": "VARYING",
+     "detail": "14 values"
+    },
+    {
+     "index": 40,
+     "kind": "VARYING",
+     "detail": "11 values"
+    },
+    {
+     "index": 41,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 42,
+     "kind": "VARYING",
+     "detail": "113 values"
+    }
+   ]
+  },
+  "cfbd4086": {
+   "id_bytes": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    6,
+    7,
+    9,
+    12,
+    14
+   ],
+   "command_bytes": [
+    5,
+    8,
+    10,
+    13,
+    15
+   ],
+   "counter_bytes": [],
+   "check_bytes": [],
+   "id_value": "cfbd4086d27c1733073f",
+   "count": 146,
+   "fields": [
+    {
+     "index": 0,
+     "kind": "FIXED",
+     "detail": "0xcf"
+    },
+    {
+     "index": 1,
+     "kind": "FIXED",
+     "detail": "0xbd"
+    },
+    {
+     "index": 2,
+     "kind": "FIXED",
+     "detail": "0x40"
+    },
+    {
+     "index": 3,
+     "kind": "FIXED",
+     "detail": "0x86"
+    },
+    {
+     "index": 4,
+     "kind": "FIXED",
+     "detail": "0xd2"
+    },
+    {
+     "index": 5,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 6,
+     "kind": "FIXED",
+     "detail": "0x7c"
+    },
+    {
+     "index": 7,
+     "kind": "FIXED",
+     "detail": "0x17"
+    },
+    {
+     "index": 8,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 9,
+     "kind": "FIXED",
+     "detail": "0x33"
+    },
+    {
+     "index": 10,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 11,
+     "kind": "VARYING",
+     "detail": "3 values"
+    },
+    {
+     "index": 12,
+     "kind": "FIXED",
+     "detail": "0x07"
+    },
+    {
+     "index": 13,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 14,
+     "kind": "FIXED",
+     "detail": "0x3f"
+    },
+    {
+     "index": 15,
+     "kind": "COMMAND",
+     "detail": "const within a press"
+    },
+    {
+     "index": 16,
+     "kind": "VARYING",
+     "detail": "5 values"
+    },
+    {
+     "index": 17,
+     "kind": "VARYING",
+     "detail": "12 values"
+    },
+    {
+     "index": 18,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 19,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 20,
+     "kind": "VARYING",
+     "detail": "12 values"
+    },
+    {
+     "index": 21,
+     "kind": "VARYING",
+     "detail": "14 values"
+    },
+    {
+     "index": 22,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 23,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 24,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 25,
+     "kind": "VARYING",
+     "detail": "14 values"
+    },
+    {
+     "index": 26,
+     "kind": "VARYING",
+     "detail": "15 values"
+    },
+    {
+     "index": 27,
+     "kind": "VARYING",
+     "detail": "14 values"
+    },
+    {
+     "index": 28,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 29,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 30,
+     "kind": "VARYING",
+     "detail": "12 values"
+    },
+    {
+     "index": 31,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 32,
+     "kind": "VARYING",
+     "detail": "14 values"
+    },
+    {
+     "index": 33,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 34,
+     "kind": "VARYING",
+     "detail": "15 values"
+    },
+    {
+     "index": 35,
+     "kind": "VARYING",
+     "detail": "15 values"
+    },
+    {
+     "index": 36,
+     "kind": "VARYING",
+     "detail": "16 values"
+    },
+    {
+     "index": 37,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 38,
+     "kind": "VARYING",
+     "detail": "15 values"
+    },
+    {
+     "index": 39,
+     "kind": "VARYING",
+     "detail": "13 values"
+    },
+    {
+     "index": 40,
+     "kind": "VARYING",
+     "detail": "16 values"
+    },
+    {
+     "index": 41,
+     "kind": "VARYING",
+     "detail": "14 values"
+    },
+    {
+     "index": 42,
+     "kind": "VARYING",
+     "detail": "102 values"
+    }
+   ]
+  }
+ },
+ "labels": {
+  "4200": "点灯",
+  "4600": "消灯",
+  "8650": "明るさ↑",
+  "86a0": "明るさ↓",
+  "8660": "昼光色",
+  "8690": "電球色",
+  "8608": "全灯"
+ },
+ "note": "byte30 low 2 bits are a packet sequence; mask with 0xFC for the parameter. 全灯 uses sub-format e5 43 ff fc at bytes 24-27."
+}

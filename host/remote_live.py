@@ -11,7 +11,7 @@ How it works
   4. Packets of type 6DBF within one counter step are majority-voted; a new (command, parameter, counter) prints a line.
 Stop with Ctrl-C (or the --duration limit).
 """
-import argparse, sys, os, time, collections
+import argparse, sys, os, time, collections, json, glob
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from esp32sdr import Device
@@ -20,6 +20,12 @@ import pkt, lightremote
 
 CODES = lightremote.CODES
 PARAM = {0x50: "明るさ↑", 0xa0: "明るさ↓", 0x60: "昼光色", 0x90: "電球色", 0x08: "全灯"}   # byte 30 & 0xFC when byte 23 == 0x86 (low 2 bits = packet sequence)
+PROFILE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "profiles")
+
+def load_profile(name):
+    p = os.path.join(PROFILE_DIR, name + ".json")
+    if not os.path.exists(p): sys.exit(f"profile {name} not found in {PROFILE_DIR}")
+    return json.load(open(p))
 
 def unpack_frame(payload, fmt):
     if fmt: raw = np.frombuffer(payload, dtype="<i2"); x = raw[0::2].astype(np.float32) + 1j * raw[1::2].astype(np.float32)
@@ -29,7 +35,13 @@ def unpack_frame(payload, fmt):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--freq", type=float, default=2402); ap.add_argument("--rate", type=float, default=16e6); ap.add_argument("--gain", type=int, default=30)
     ap.add_argument("--duration", type=float, default=3600); ap.add_argument("--log", default="logs/remote_live.txt"); ap.add_argument("--out", default="captures/web/remote_live"); ap.add_argument("--chunk", type=float, default=60, help="seconds per stream segment (gain/threshold are re-evaluated between segments)")
+    ap.add_argument("--profile", default=None, help="device profile JSON name (from rfproto.py learn); without it, uses the built-in lighting-remote map")
     a = ap.parse_args(); rate = int(a.rate); fullscale = 511 if rate >= 16e6 else 127
+    prof = load_profile(a.profile) if a.profile else None
+    if prof:
+        prof_sync = int(prof["sync"], 16); prof_synclen = len(prof["sync"]) * 4; prof_syncpat = np.array([int(c) for c in f"{prof_sync:0{prof_synclen}b}"], dtype=np.int16)
+        prof_varpat = np.array([int(c) for c in f"{int(prof['main_variant'], 16):032b}"], dtype=np.int16)
+        prof_cmd = prof["variants"][prof["main_variant"]].get("command_bytes", []); prof_labels = {tuple(bytes.fromhex(k)): v for k, v in prof.get("labels", {}).items()}
     dev = Device(); dev.tune(a.freq * 1e6); gain = a.gain; dev.set_gain(gain)
     logf = open(a.log, "a"); 
     def say(msg):
@@ -56,6 +68,15 @@ def main():
         def flush_window():
             nonlocal win, win_t, last_key
             if not win: return
+            if prof:
+                sel = [b for b in win if len(b) >= 32 and np.sum(b[:32] != prof_varpat) <= 6]
+                if len(sel) >= 2:
+                    M = np.array(sel); v = (M.mean(axis=0) > 0.5).astype(np.uint8); by = bytes(np.packbits(v)); conf = float(np.mean(np.abs(M.mean(axis=0) - 0.5) * 2))
+                    cmd = bytes(by[j] for j in prof_cmd if j < len(by)); key = cmd
+                    if key != last_key:
+                        last_key = key; label = prof_labels.get(cmd, "")
+                        say(f"PRESS  {label + '  ' if label else ''}command {cmd.hex(' ')}  votes {len(sel):3d} conf {conf:.2f}  bytes {by[:min(len(by),40)].hex(' ')}")
+                win = []; win_t = None; return
             for kind, pat in (("6DBF", 0xcfbd6dbf), ("4086", 0xcfbd4086)):
                 P = np.array([int(c) for c in f"{pat:032b}"], dtype=np.int16); sel = [b for b in win if np.sum(b[:32] != P) <= 6]
                 if kind != "6DBF" or len(sel) < 2: continue
@@ -78,9 +99,11 @@ def main():
             thr_b = max(15.0, float(np.percentile(np.abs(x), 20)) * 3)
             for s0, s1 in pkt.bursts_of(x, fs, thr_b, 150):
                 stats["bursts"] += 1; seg = x[max(0, s0 - 64):s1 + 64]; best = None
-                for ph, b, m in pkt.bitstreams(seg, fs, 1e6, True):
-                    s = "".join(map(str, b)); k = lightremote.sync_pos(s, 3)
-                    if k >= 0 and len(s) >= k + 320 and (best is None or m > best[0]): best = (m, s[k:k + 320])
+                drate = prof["rate"] if prof else 1e6; need = (prof["nbytes"] if prof else 40) * 8
+                for ph, b, m in pkt.bitstreams(seg, fs, drate, True):
+                    s = "".join(map(str, b))
+                    k = lightremote.sync_pos(s, 3, prof["sync"]) if prof else lightremote.sync_pos(s, 3)
+                    if k >= 0 and len(s) >= k + need and (best is None or m > best[0]): best = (m, s[k:k + need])
                 if best:
                     stats["pk"] += 1; bits = np.array([int(c) for c in best[1]], dtype=np.int16); tnow = t_us / 1e6
                     if win_t is not None and tnow - win_t > 1.0: flush_window()

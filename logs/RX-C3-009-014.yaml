@@ -126,3 +126,9 @@
   capture_path: logs/remote_live.txt, captures/web/remote_live*.sigmf-* (not in git), docs/remote_2402.md
   result: byte 23 = 0x42 on / 0x46 off / 0x86 adjust; byte 30 bits 7..2 = 0x50 bright+, 0xa0 bright-, 0x60 daylight, 0x90 warm, 0x08 all-on (sub-format e5 43 ff fc); byte 30 bits 1..0 = packet sequence; bytes 28-29 = 14-bit counter
   interpretation: verified by a 7-button ordered test and a 5x brightness-up test; derived bytes 31-36 and check byte 39 remain unknown
+- experiment_id: RX-C3-029
+  title: Generic same-family remote analyser (rfproto.py) with sync discovery, field inference and device profiles
+  date: 2026-10-18
+  capture_path: host/rfproto.py, profiles/living_light.json, docs/remote_2402.md
+  result: sync auto-found (0xADF645C7, 454 hits); per-variant field map inferred (FIXED/COMMAND/COUNTER/CHECK); profile auto-matches held-out captures (100% on seq4, 92% on seq1); remote_live.py --profile drives any learned device; TX not implemented (receive-only policy)
+  interpretation: any same-family 1 Mbps GFSK remote can be learned and decoded without device-specific code

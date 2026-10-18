@@ -25,12 +25,13 @@ CODES = {0x42: "点灯", 0x46: "消灯", 0x86: "調整"}
 PARAM = {0x50: "明るさ↑", 0xa0: "明るさ↓", 0x60: "昼光色", 0x90: "電球色", 0x08: "全灯"}
 SYNC = f"{0xadf645c7:032b}"
 
-def sync_pos(s, maxerr=3):
-    """Position after a sync word matching 0xADF645C7 with up to maxerr bit errors (or -1)."""
-    best = -1; bd = maxerr + 1
-    for k in range(0, len(s) - 32):
-        d = sum(1 for i in range(32) if s[k + i] != SYNC[i])
-        if d < bd: bd = d; best = k + 32
+def sync_pos(s, maxerr=3, sync_hex=None):
+    """Position after a sync word (default 0xADF645C7, or sync_hex) with up to maxerr bit errors (or -1)."""
+    pat = SYNC if sync_hex is None else f"{int(sync_hex, 16):0{len(sync_hex) * 4}b}"
+    n = len(pat); best = -1; bd = maxerr + 1
+    for k in range(0, len(s) - n):
+        d = sum(1 for i in range(n) if s[k + i] != pat[i])
+        if d < bd: bd = d; best = k + n
         if bd == 0: break
     return best
 
