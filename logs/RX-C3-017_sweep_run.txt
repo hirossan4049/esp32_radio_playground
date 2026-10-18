@@ -277,3 +277,370 @@ F  2664.0 MHz pll  2664.0     floor  49.25 dB sat 0 fails 0
 F  2667.0 MHz pll  2667.0     floor  49.24 dB sat 0 fails 0
 F  2670.0 MHz pll  2670.0     floor  49.09 dB sat 0 fails 0
 F  2673.0 MHz pll  2673.0     floor  49.08 dB sat 1 fails 0
+F  2676.0 MHz pll  2676.0     floor  49.10 dB sat 0 fails 0
+F  2679.0 MHz pll  2679.0     floor  48.63 dB sat 0 fails 0
+F  2682.0 MHz pll  2682.0     floor  48.69 dB sat 0 fails 0
+F  2685.0 MHz pll  2685.0     floor  48.43 dB sat 0 fails 0
+F  2688.0 MHz pll  2688.0     floor  48.75 dB sat 0 fails 0
+F  2691.0 MHz pll  2691.0     floor  48.38 dB sat 0 fails 0
+F  2694.0 MHz pll  2694.0     floor  48.30 dB sat 0 fails 0
+F  2697.0 MHz pll  2697.0     floor  48.36 dB sat 0 fails 0
+F  2700.0 MHz pll  2700.0     floor  48.09 dB sat 0 fails 0
+F  2703.0 MHz pll  2703.0     floor  48.05 dB sat 0 fails 0
+F  2706.0 MHz pll  2706.0     floor  47.75 dB sat 0 fails 0
+F  2709.0 MHz pll  2709.0     floor  47.72 dB sat 0 fails 0
+F  2712.0 MHz pll  2712.0     floor  47.64 dB sat 0 fails 0
+F  2715.0 MHz pll  2715.0     floor  47.37 dB sat 0 fails 0
+F  2718.0 MHz pll  2718.0     floor  47.22 dB sat 0 fails 0
+F  2721.0 MHz pll  2721.0     floor  47.10 dB sat 0 fails 0
+F  2724.0 MHz pll  2724.0     floor  47.09 dB sat 1 fails 0
+F  2727.0 MHz pll  2727.0     floor  46.92 dB sat 0 fails 0
+F  2730.0 MHz pll  2730.0     floor  46.65 dB sat 0 fails 0
+F  2733.0 MHz pll  2733.0     floor  46.30 dB sat 0 fails 0
+F  2736.0 MHz pll  2736.0     floor  46.37 dB sat 0 fails 0
+F  2739.0 MHz pll  2739.0     floor  46.24 dB sat 0 fails 0
+F  2742.0 MHz pll  2742.0     floor  46.26 dB sat 0 fails 0
+F  2745.0 MHz pll  2745.0     floor  46.33 dB sat 0 fails 0
+F  2748.0 MHz pll  2748.0     floor  46.15 dB sat 0 fails 0
+F  2751.0 MHz pll  2751.0     floor  46.16 dB sat 0 fails 0
+F  2754.0 MHz pll  2754.0     floor  46.15 dB sat 0 fails 0
+F  2757.0 MHz pll  2757.0     floor  46.18 dB sat 0 fails 0
+F  2760.0 MHz pll  2760.0     floor  46.19 dB sat 0 fails 0
+F  2763.0 MHz pll  2763.0     floor  46.14 dB sat 0 fails 0
+F  2766.0 MHz pll  2766.0     floor  46.06 dB sat 0 fails 0
+F  2769.0 MHz pll  2769.0     floor  46.09 dB sat 0 fails 0
+F  2772.0 MHz pll  2772.0     floor  45.95 dB sat 0 fails 0
+F  2775.0 MHz pll  2775.0     floor  46.00 dB sat 0 fails 0
+F  2778.0 MHz pll  2778.0     floor  46.04 dB sat 0 fails 0
+F  2781.0 MHz pll  2781.0     floor  46.00 dB sat 0 fails 0
+F  2784.0 MHz pll  2784.0     floor  45.93 dB sat 0 fails 0
+F  2787.0 MHz pll  2787.0     floor  45.96 dB sat 0 fails 0
+F  2790.0 MHz pll  2790.0     floor  45.93 dB sat 1 fails 0
+F  2793.0 MHz pll  2793.0     floor  45.82 dB sat 0 fails 0
+F  2796.0 MHz pll  2796.0     floor  45.55 dB sat 0 fails 0
+F  2799.0 MHz pll  2799.0     floor  45.53 dB sat 0 fails 0
+F  2802.0 MHz pll  2802.0     floor  45.40 dB sat 0 fails 0
+done
+sweep 321 points, 6 blocks each at 40 MS/s, gain 60
+F  1842.0 MHz pll  2210.4 5/6 floor  62.45 dB sat 6 fails 0
+F  1845.0 MHz pll  2214.0 5/6 floor  68.82 dB sat 6 fails 0
+F  1848.0 MHz pll  2217.6 5/6 floor  71.27 dB sat 6 fails 0
+F  1851.0 MHz pll  2221.2 5/6 floor  64.12 dB sat 6 fails 0
+F  1854.0 MHz pll  2224.8 5/6 floor  69.63 dB sat 6 fails 0
+F  1857.0 MHz pll  2228.4 5/6 floor  60.48 dB sat 6 fails 0
+F  1860.0 MHz pll  2232.0 5/6 floor  61.40 dB sat 6 fails 0
+F  1863.0 MHz pll  2235.6 5/6 floor  58.55 dB sat 6 fails 0
+F  1866.0 MHz pll  2239.2 5/6 floor  59.07 dB sat 2 fails 0
+F  1869.0 MHz pll  2242.8 5/6 floor  58.87 dB sat 0 fails 0
+F  1872.0 MHz pll  2246.4 5/6 floor  59.05 dB sat 0 fails 0
+F  1875.0 MHz pll  2250.0 5/6 floor  56.37 dB sat 0 fails 0
+F  1878.0 MHz pll  2253.6 5/6 floor  54.55 dB sat 0 fails 0
+F  1881.0 MHz pll  2257.2 5/6 floor  43.14 dB sat 0 fails 0
+F  1884.0 MHz pll  2260.8 5/6 floor  41.87 dB sat 0 fails 0
+F  1887.0 MHz pll  2264.4 5/6 floor  40.99 dB sat 0 fails 0
+F  1890.0 MHz pll  2268.0 5/6 floor  40.62 dB sat 0 fails 0
+F  1893.0 MHz pll  2271.6 5/6 floor  40.39 dB sat 0 fails 0
+F  1896.0 MHz pll  2275.2 5/6 floor  40.24 dB sat 0 fails 0
+F  1899.0 MHz pll  2278.8 5/6 floor  40.27 dB sat 0 fails 0
+F  1902.0 MHz pll  2282.4 5/6 floor  40.27 dB sat 0 fails 0
+F  1905.0 MHz pll  2286.0 5/6 floor  40.11 dB sat 0 fails 0
+F  1908.0 MHz pll  2289.6 5/6 floor  40.12 dB sat 0 fails 0
+F  1911.0 MHz pll  2293.2 5/6 floor  40.18 dB sat 0 fails 0
+F  1914.0 MHz pll  2296.8 5/6 floor  40.12 dB sat 0 fails 0
+F  1917.0 MHz pll  2300.4 5/6 floor  39.83 dB sat 0 fails 0
+F  1920.0 MHz pll  2304.0 5/6 floor  39.97 dB sat 0 fails 0
+F  1923.0 MHz pll  2307.6 5/6 floor  40.02 dB sat 0 fails 0
+F  1926.0 MHz pll  2311.2 5/6 floor  39.90 dB sat 0 fails 0
+F  1929.0 MHz pll  2314.8 5/6 floor  40.10 dB sat 0 fails 0
+F  1932.0 MHz pll  2318.4 5/6 floor  39.86 dB sat 0 fails 0
+F  1935.0 MHz pll  2322.0 5/6 floor  40.12 dB sat 0 fails 0
+F  1938.0 MHz pll  2325.6 5/6 floor  40.07 dB sat 0 fails 0
+F  1941.0 MHz pll  2329.2 5/6 floor  40.06 dB sat 0 fails 0
+F  1944.0 MHz pll  2332.8 5/6 floor  40.13 dB sat 1 fails 0
+F  1947.0 MHz pll  2336.4 5/6 floor  40.15 dB sat 0 fails 0
+F  1950.0 MHz pll  2340.0 5/6 floor  40.19 dB sat 0 fails 0
+F  1953.0 MHz pll  2343.6 5/6 floor  40.05 dB sat 0 fails 0
+F  1956.0 MHz pll  2347.2 5/6 floor  40.01 dB sat 0 fails 0
+F  1959.0 MHz pll  2350.8 5/6 floor  40.36 dB sat 0 fails 0
+F  1962.0 MHz pll  2354.4 5/6 floor  39.99 dB sat 0 fails 0
+F  1965.0 MHz pll  2358.0 5/6 floor  40.11 dB sat 0 fails 0
+F  1968.0 MHz pll  2361.6 5/6 floor  40.12 dB sat 0 fails 0
+F  1971.0 MHz pll  2365.2 5/6 floor  40.17 dB sat 0 fails 0
+F  1974.0 MHz pll  2368.8 5/6 floor  40.12 dB sat 0 fails 0
+F  1977.0 MHz pll  2372.4 5/6 floor  40.18 dB sat 0 fails 0
+F  1980.0 MHz pll  2376.0 5/6 floor  39.99 dB sat 0 fails 0
+F  1983.0 MHz pll  2379.6 5/6 floor  40.29 dB sat 0 fails 0
+F  1986.0 MHz pll  2383.2 5/6 floor  40.31 dB sat 0 fails 0
+F  1989.0 MHz pll  2386.8 5/6 floor  40.29 dB sat 0 fails 0
+F  1992.0 MHz pll  2390.4 5/6 floor  40.33 dB sat 0 fails 0
+F  1995.0 MHz pll  2394.0 5/6 floor  40.18 dB sat 0 fails 0
+F  1998.0 MHz pll  2397.6 5/6 floor  40.34 dB sat 0 fails 0
+F  2001.0 MHz pll  2401.2 5/6 floor  40.32 dB sat 0 fails 0
+F  2004.0 MHz pll  2404.8 5/6 floor  40.49 dB sat 0 fails 0
+F  2007.0 MHz pll  2408.4 5/6 floor  40.33 dB sat 0 fails 0
+F  2010.0 MHz pll  2412.0 5/6 floor  40.46 dB sat 0 fails 0
+F  2013.0 MHz pll  2415.6 5/6 floor  40.61 dB sat 0 fails 0
+F  2016.0 MHz pll  2419.2 5/6 floor  40.41 dB sat 0 fails 0
+F  2019.0 MHz pll  2422.8 5/6 floor  40.49 dB sat 0 fails 0
+F  2022.0 MHz pll  2426.4 5/6 floor  40.49 dB sat 0 fails 0
+F  2025.0 MHz pll  2430.0 5/6 floor  40.56 dB sat 0 fails 0
+F  2028.0 MHz pll  2433.6 5/6 floor  40.48 dB sat 0 fails 0
+F  2031.0 MHz pll  2437.2 5/6 floor  40.51 dB sat 0 fails 0
+F  2034.0 MHz pll  2440.8 5/6 floor  40.56 dB sat 0 fails 0
+F  2037.0 MHz pll  2444.4 5/6 floor  40.57 dB sat 0 fails 0
+F  2040.0 MHz pll  2448.0 5/6 floor  40.81 dB sat 0 fails 0
+F  2043.0 MHz pll  2451.6 5/6 floor  40.69 dB sat 0 fails 0
+F  2046.0 MHz pll  2455.2 5/6 floor  40.62 dB sat 1 fails 0
+F  2049.0 MHz pll  2458.8 5/6 floor  40.49 dB sat 0 fails 0
+F  2052.0 MHz pll  2462.4 5/6 floor  40.56 dB sat 0 fails 0
+F  2055.0 MHz pll  2466.0 5/6 floor  40.79 dB sat 2 fails 0
+F  2058.0 MHz pll  2469.6 5/6 floor  40.92 dB sat 0 fails 0
+F  2061.0 MHz pll  2473.2 5/6 floor  40.90 dB sat 0 fails 0
+F  2064.0 MHz pll  2476.8 5/6 floor  41.11 dB sat 0 fails 0
+F  2067.0 MHz pll  2480.4 5/6 floor  41.27 dB sat 1 fails 0
+F  2070.0 MHz pll  2484.0 5/6 floor  41.47 dB sat 0 fails 0
+F  2073.0 MHz pll  2487.6 5/6 floor  41.36 dB sat 0 fails 0
+F  2076.0 MHz pll  2491.2 5/6 floor  41.42 dB sat 0 fails 0
+F  2079.0 MHz pll  2494.8 5/6 floor  41.61 dB sat 0 fails 0
+F  2082.0 MHz pll  2498.4 5/6 floor  41.79 dB sat 1 fails 0
+F  2085.0 MHz pll  2502.0 5/6 floor  41.94 dB sat 0 fails 0
+F  2088.0 MHz pll  2505.6 5/6 floor  41.98 dB sat 0 fails 0
+F  2091.0 MHz pll  2509.2 5/6 floor  42.28 dB sat 0 fails 0
+F  2094.0 MHz pll  2512.8 5/6 floor  42.31 dB sat 0 fails 0
+F  2097.0 MHz pll  2516.4 5/6 floor  42.49 dB sat 0 fails 0
+F  2100.0 MHz pll  2520.0 5/6 floor  42.71 dB sat 0 fails 0
+F  2103.0 MHz pll  2523.6 5/6 floor  42.97 dB sat 0 fails 0
+F  2106.0 MHz pll  2527.2 5/6 floor  43.34 dB sat 0 fails 0
+F  2109.0 MHz pll  2530.8 5/6 floor  44.09 dB sat 1 fails 0
+F  2112.0 MHz pll  2534.4 5/6 floor  55.75 dB sat 0 fails 0
+F  2115.0 MHz pll  2538.0 5/6 floor  61.62 dB sat 3 fails 0
+F  2118.0 MHz pll  2541.6 5/6 floor  66.55 dB sat 4 fails 0
+F  2121.0 MHz pll  2545.2 5/6 floor  61.27 dB sat 3 fails 0
+F  2124.0 MHz pll  2548.8 5/6 floor  57.11 dB sat 2 fails 0
+F  2127.0 MHz pll  2552.4 5/6 floor  62.77 dB sat 0 fails 0
+F  2130.0 MHz pll  2556.0 5/6 floor  60.16 dB sat 2 fails 0
+F  2133.0 MHz pll  2559.6 5/6 floor  58.84 dB sat 1 fails 0
+F  2136.0 MHz pll  2563.2 5/6 floor  60.12 dB sat 0 fails 0
+F  2139.0 MHz pll  2566.8 5/6 floor  64.24 dB sat 0 fails 0
+F  2142.0 MHz pll  2570.4 5/6 floor  61.82 dB sat 0 fails 0
+F  2145.0 MHz pll  2574.0 5/6 floor  63.83 dB sat 0 fails 0
+F  2148.0 MHz pll  2577.6 5/6 floor  61.25 dB sat 0 fails 0
+F  2151.0 MHz pll  2581.2 5/6 floor  62.14 dB sat 1 fails 0
+F  2154.0 MHz pll  2584.8 5/6 floor  61.80 dB sat 0 fails 0
+F  2157.0 MHz pll  2588.4 5/6 floor  60.53 dB sat 0 fails 0
+F  2160.0 MHz pll  2592.0 5/6 floor  60.99 dB sat 0 fails 0
+F  2163.0 MHz pll  2595.6 5/6 floor  59.14 dB sat 0 fails 0
+F  2166.0 MHz pll  2599.2 5/6 floor  61.59 dB sat 0 fails 0
+F  2169.0 MHz pll  2602.8 5/6 floor  52.38 dB sat 0 fails 0
+F  2172.0 MHz pll  2606.4 5/6 floor  44.31 dB sat 0 fails 0
+F  2175.0 MHz pll  2610.0 5/6 floor  43.68 dB sat 0 fails 0
+F  2178.0 MHz pll  2613.6 5/6 floor  43.34 dB sat 0 fails 0
+F  2181.0 MHz pll  2617.2 5/6 floor  43.27 dB sat 1 fails 0
+F  2184.0 MHz pll  2620.8 5/6 floor  43.29 dB sat 0 fails 0
+F  2187.0 MHz pll  2624.4 5/6 floor  43.26 dB sat 0 fails 0
+F  2190.0 MHz pll  2628.0 5/6 floor  43.37 dB sat 1 fails 0
+F  2193.0 MHz pll  2631.6 5/6 floor  43.34 dB sat 0 fails 0
+F  2196.0 MHz pll  2635.2 5/6 floor  43.23 dB sat 0 fails 0
+F  2199.0 MHz pll  2638.8 5/6 floor  43.37 dB sat 0 fails 0
+F  2202.0 MHz pll  2642.4 5/6 floor  43.46 dB sat 1 fails 0
+F  2205.0 MHz pll  2205.0     floor  43.45 dB sat 0 fails 0
+F  2208.0 MHz pll  2208.0     floor  43.58 dB sat 0 fails 0
+F  2211.0 MHz pll  2211.0     floor  43.47 dB sat 0 fails 0
+F  2214.0 MHz pll  2214.0     floor  43.54 dB sat 0 fails 0
+F  2217.0 MHz pll  2217.0     floor  43.62 dB sat 0 fails 0
+F  2220.0 MHz pll  2220.0     floor  43.58 dB sat 0 fails 0
+F  2223.0 MHz pll  2223.0     floor  43.79 dB sat 0 fails 0
+F  2226.0 MHz pll  2226.0     floor  43.94 dB sat 0 fails 0
+F  2229.0 MHz pll  2229.0     floor  44.04 dB sat 0 fails 0
+F  2232.0 MHz pll  2232.0     floor  44.15 dB sat 0 fails 0
+F  2235.0 MHz pll  2235.0     floor  44.32 dB sat 0 fails 0
+F  2238.0 MHz pll  2238.0     floor  44.45 dB sat 0 fails 0
+F  2241.0 MHz pll  2241.0     floor  44.44 dB sat 0 fails 0
+F  2244.0 MHz pll  2244.0     floor  44.62 dB sat 0 fails 0
+F  2247.0 MHz pll  2247.0     floor  45.02 dB sat 0 fails 0
+F  2250.0 MHz pll  2250.0     floor  45.04 dB sat 0 fails 0
+F  2253.0 MHz pll  2253.0     floor  45.00 dB sat 0 fails 0
+F  2256.0 MHz pll  2256.0     floor  45.21 dB sat 0 fails 0
+F  2259.0 MHz pll  2259.0     floor  45.35 dB sat 0 fails 0
+F  2262.0 MHz pll  2262.0     floor  45.32 dB sat 0 fails 0
+F  2265.0 MHz pll  2265.0     floor  45.68 dB sat 0 fails 0
+F  2268.0 MHz pll  2268.0     floor  45.75 dB sat 0 fails 0
+F  2271.0 MHz pll  2271.0     floor  46.02 dB sat 0 fails 0
+F  2274.0 MHz pll  2274.0     floor  46.10 dB sat 0 fails 0
+F  2277.0 MHz pll  2277.0     floor  46.62 dB sat 0 fails 0
+F  2280.0 MHz pll  2280.0     floor  46.81 dB sat 0 fails 0
+F  2283.0 MHz pll  2283.0     floor  47.05 dB sat 0 fails 0
+F  2286.0 MHz pll  2286.0     floor  47.51 dB sat 0 fails 0
+F  2289.0 MHz pll  2289.0     floor  47.68 dB sat 0 fails 0
+F  2292.0 MHz pll  2292.0     floor  47.96 dB sat 0 fails 0
+F  2295.0 MHz pll  2295.0     floor  48.37 dB sat 0 fails 0
+F  2298.0 MHz pll  2298.0     floor  48.25 dB sat 0 fails 0
+F  2301.0 MHz pll  2301.0     floor  48.34 dB sat 0 fails 0
+F  2304.0 MHz pll  2304.0     floor  48.36 dB sat 0 fails 0
+F  2307.0 MHz pll  2307.0     floor  48.59 dB sat 0 fails 0
+F  2310.0 MHz pll  2310.0     floor  48.78 dB sat 0 fails 0
+F  2313.0 MHz pll  2313.0     floor  48.64 dB sat 0 fails 0
+F  2316.0 MHz pll  2316.0     floor  48.72 dB sat 0 fails 0
+F  2319.0 MHz pll  2319.0     floor  48.70 dB sat 0 fails 0
+F  2322.0 MHz pll  2322.0     floor  48.69 dB sat 0 fails 0
+F  2325.0 MHz pll  2325.0     floor  48.56 dB sat 0 fails 0
+F  2328.0 MHz pll  2328.0     floor  48.77 dB sat 0 fails 0
+F  2331.0 MHz pll  2331.0     floor  48.53 dB sat 0 fails 0
+F  2334.0 MHz pll  2334.0     floor  48.77 dB sat 0 fails 0
+F  2337.0 MHz pll  2337.0     floor  48.75 dB sat 0 fails 0
+F  2340.0 MHz pll  2340.0     floor  48.74 dB sat 0 fails 0
+F  2343.0 MHz pll  2343.0     floor  48.92 dB sat 0 fails 0
+F  2346.0 MHz pll  2346.0     floor  48.98 dB sat 0 fails 0
+F  2349.0 MHz pll  2349.0     floor  49.19 dB sat 0 fails 0
+F  2352.0 MHz pll  2352.0     floor  49.32 dB sat 0 fails 0
+F  2355.0 MHz pll  2355.0     floor  49.41 dB sat 0 fails 0
+F  2358.0 MHz pll  2358.0     floor  49.34 dB sat 0 fails 0
+F  2361.0 MHz pll  2361.0     floor  49.49 dB sat 0 fails 0
+F  2364.0 MHz pll  2364.0     floor  49.62 dB sat 0 fails 0
+F  2367.0 MHz pll  2367.0     floor  49.73 dB sat 0 fails 0
+F  2370.0 MHz pll  2370.0     floor  49.79 dB sat 0 fails 0
+F  2373.0 MHz pll  2373.0     floor  49.92 dB sat 0 fails 0
+F  2376.0 MHz pll  2376.0     floor  49.75 dB sat 0 fails 0
+F  2379.0 MHz pll  2379.0     floor  49.37 dB sat 0 fails 0
+F  2382.0 MHz pll  2382.0     floor  49.75 dB sat 0 fails 0
+F  2385.0 MHz pll  2385.0     floor  49.97 dB sat 0 fails 0
+F  2388.0 MHz pll  2388.0     floor  49.51 dB sat 0 fails 0
+F  2391.0 MHz pll  2391.0     floor  49.77 dB sat 0 fails 0
+F  2394.0 MHz pll  2394.0     floor  50.10 dB sat 0 fails 0
+F  2397.0 MHz pll  2397.0     floor  50.13 dB sat 0 fails 0
+F  2400.0 MHz pll  2400.0     floor  50.25 dB sat 0 fails 0
+F  2403.0 MHz pll  2403.0     floor  50.63 dB sat 0 fails 0
+F  2406.0 MHz pll  2406.0     floor  51.43 dB sat 0 fails 0
+F  2409.0 MHz pll  2409.0     floor  50.94 dB sat 0 fails 0
+F  2412.0 MHz pll  2412.0     floor  51.08 dB sat 0 fails 0
+F  2415.0 MHz pll  2415.0     floor  50.99 dB sat 0 fails 0
+F  2418.0 MHz pll  2418.0     floor  50.73 dB sat 0 fails 0
+F  2421.0 MHz pll  2421.0     floor  50.52 dB sat 0 fails 0
+F  2424.0 MHz pll  2424.0     floor  51.03 dB sat 2 fails 0
+F  2427.0 MHz pll  2427.0     floor  50.36 dB sat 0 fails 0
+F  2430.0 MHz pll  2430.0     floor  51.85 dB sat 2 fails 0
+F  2433.0 MHz pll  2433.0     floor  49.84 dB sat 0 fails 0
+F  2436.0 MHz pll  2436.0     floor  49.73 dB sat 1 fails 0
+F  2439.0 MHz pll  2439.0     floor  52.09 dB sat 1 fails 0
+F  2442.0 MHz pll  2442.0     floor  49.69 dB sat 0 fails 0
+F  2445.0 MHz pll  2445.0     floor  49.85 dB sat 0 fails 0
+F  2448.0 MHz pll  2448.0     floor  54.93 dB sat 2 fails 0
+F  2451.0 MHz pll  2451.0     floor  49.67 dB sat 0 fails 0
+F  2454.0 MHz pll  2454.0     floor  53.80 dB sat 1 fails 0
+F  2457.0 MHz pll  2457.0     floor  53.69 dB sat 0 fails 0
+F  2460.0 MHz pll  2460.0     floor  49.79 dB sat 1 fails 0
+F  2463.0 MHz pll  2463.0     floor  49.83 dB sat 0 fails 0
+F  2466.0 MHz pll  2466.0     floor  49.34 dB sat 0 fails 0
+F  2469.0 MHz pll  2469.0     floor  49.46 dB sat 0 fails 0
+F  2472.0 MHz pll  2472.0     floor  50.02 dB sat 1 fails 0
+F  2475.0 MHz pll  2475.0     floor  49.40 dB sat 0 fails 0
+F  2478.0 MHz pll  2478.0     floor  49.17 dB sat 0 fails 0
+F  2481.0 MHz pll  2481.0     floor  49.39 dB sat 0 fails 0
+F  2484.0 MHz pll  2484.0     floor  49.81 dB sat 2 fails 0
+F  2487.0 MHz pll  2487.0     floor  49.36 dB sat 0 fails 0
+F  2490.0 MHz pll  2490.0     floor  49.75 dB sat 0 fails 0
+F  2493.0 MHz pll  2493.0     floor  49.39 dB sat 0 fails 0
+F  2496.0 MHz pll  2496.0     floor  49.42 dB sat 0 fails 0
+F  2499.0 MHz pll  2499.0     floor  49.44 dB sat 0 fails 0
+F  2502.0 MHz pll  2502.0     floor  49.75 dB sat 0 fails 0
+F  2505.0 MHz pll  2505.0     floor  49.55 dB sat 0 fails 0
+F  2508.0 MHz pll  2508.0     floor  49.41 dB sat 0 fails 0
+F  2511.0 MHz pll  2511.0     floor  49.70 dB sat 0 fails 0
+F  2514.0 MHz pll  2514.0     floor  49.74 dB sat 0 fails 0
+F  2517.0 MHz pll  2517.0     floor  49.96 dB sat 0 fails 0
+F  2520.0 MHz pll  2520.0     floor  49.72 dB sat 0 fails 0
+F  2523.0 MHz pll  2523.0     floor  49.89 dB sat 0 fails 0
+F  2526.0 MHz pll  2526.0     floor  49.97 dB sat 0 fails 0
+F  2529.0 MHz pll  2529.0     floor  49.96 dB sat 0 fails 0
+F  2532.0 MHz pll  2532.0     floor  49.94 dB sat 0 fails 0
+F  2535.0 MHz pll  2535.0     floor  49.89 dB sat 0 fails 0
+F  2538.0 MHz pll  2538.0     floor  49.68 dB sat 0 fails 0
+F  2541.0 MHz pll  2541.0     floor  49.91 dB sat 0 fails 0
+F  2544.0 MHz pll  2544.0     floor  50.68 dB sat 0 fails 0
+F  2547.0 MHz pll  2547.0     floor  50.71 dB sat 0 fails 0
+F  2550.0 MHz pll  2550.0     floor  55.74 dB sat 0 fails 0
+F  2553.0 MHz pll  2553.0     floor  56.19 dB sat 0 fails 0
+F  2556.0 MHz pll  2556.0     floor  56.11 dB sat 0 fails 0
+F  2559.0 MHz pll  2559.0     floor  56.46 dB sat 0 fails 0
+F  2562.0 MHz pll  2562.0     floor  56.34 dB sat 0 fails 0
+F  2565.0 MHz pll  2565.0     floor  57.77 dB sat 0 fails 0
+F  2568.0 MHz pll  2568.0     floor  55.55 dB sat 0 fails 0
+F  2571.0 MHz pll  2571.0     floor  54.71 dB sat 0 fails 0
+F  2574.0 MHz pll  2574.0     floor  53.56 dB sat 0 fails 0
+F  2577.0 MHz pll  2577.0     floor  50.58 dB sat 0 fails 0
+F  2580.0 MHz pll  2580.0     floor  50.10 dB sat 0 fails 0
+F  2583.0 MHz pll  2583.0     floor  50.09 dB sat 0 fails 0
+F  2586.0 MHz pll  2586.0     floor  50.05 dB sat 0 fails 0
+F  2589.0 MHz pll  2589.0     floor  50.25 dB sat 0 fails 0
+F  2592.0 MHz pll  2592.0     floor  50.59 dB sat 0 fails 0
+F  2595.0 MHz pll  2595.0     floor  51.38 dB sat 0 fails 0
+F  2598.0 MHz pll  2598.0     floor  53.33 dB sat 1 fails 0
+F  2601.0 MHz pll  2601.0     floor  51.59 dB sat 1 fails 0
+F  2604.0 MHz pll  2604.0     floor  52.34 dB sat 0 fails 0
+F  2607.0 MHz pll  2607.0     floor  57.54 dB sat 2 fails 0
+F  2610.0 MHz pll  2610.0     floor  57.83 dB sat 4 fails 0
+F  2613.0 MHz pll  2613.0     floor  54.11 dB sat 0 fails 0
+F  2616.0 MHz pll  2616.0     floor  54.25 dB sat 1 fails 0
+F  2619.0 MHz pll  2619.0     floor  55.59 dB sat 6 fails 0
+F  2622.0 MHz pll  2622.0     floor  55.96 dB sat 6 fails 0
+F  2625.0 MHz pll  2625.0     floor  56.51 dB sat 6 fails 0
+F  2628.0 MHz pll  2628.0     floor  50.58 dB sat 2 fails 0
+F  2631.0 MHz pll  2631.0     floor  60.47 dB sat 6 fails 0
+F  2634.0 MHz pll  2634.0     floor  62.74 dB sat 4 fails 0
+F  2637.0 MHz pll  2637.0     floor  61.32 dB sat 5 fails 0
+F  2640.0 MHz pll  2640.0     floor  55.84 dB sat 5 fails 0
+F  2643.0 MHz pll  2643.0     floor  54.71 dB sat 5 fails 0
+F  2646.0 MHz pll  2646.0     floor  50.71 dB sat 5 fails 0
+F  2649.0 MHz pll  2649.0     floor  49.89 dB sat 1 fails 0
+F  2652.0 MHz pll  2652.0     floor  49.44 dB sat 0 fails 0
+F  2655.0 MHz pll  2655.0     floor  49.48 dB sat 0 fails 0
+F  2658.0 MHz pll  2658.0     floor  49.38 dB sat 0 fails 0
+F  2661.0 MHz pll  2661.0     floor  49.22 dB sat 0 fails 0
+F  2664.0 MHz pll  2664.0     floor  49.20 dB sat 0 fails 0
+F  2667.0 MHz pll  2667.0     floor  49.04 dB sat 0 fails 0
+F  2670.0 MHz pll  2670.0     floor  49.02 dB sat 0 fails 0
+F  2673.0 MHz pll  2673.0     floor  48.84 dB sat 0 fails 0
+F  2676.0 MHz pll  2676.0     floor  48.64 dB sat 0 fails 0
+F  2679.0 MHz pll  2679.0     floor  48.71 dB sat 0 fails 0
+F  2682.0 MHz pll  2682.0     floor  48.63 dB sat 0 fails 0
+F  2685.0 MHz pll  2685.0     floor  48.57 dB sat 0 fails 0
+F  2688.0 MHz pll  2688.0     floor  48.32 dB sat 0 fails 0
+F  2691.0 MHz pll  2691.0     floor  48.28 dB sat 0 fails 0
+F  2694.0 MHz pll  2694.0     floor  48.27 dB sat 0 fails 0
+F  2697.0 MHz pll  2697.0     floor  48.14 dB sat 0 fails 0
+F  2700.0 MHz pll  2700.0     floor  48.01 dB sat 0 fails 0
+F  2703.0 MHz pll  2703.0     floor  47.96 dB sat 0 fails 0
+F  2706.0 MHz pll  2706.0     floor  47.83 dB sat 0 fails 0
+F  2709.0 MHz pll  2709.0     floor  47.75 dB sat 0 fails 0
+F  2712.0 MHz pll  2712.0     floor  47.53 dB sat 1 fails 0
+F  2715.0 MHz pll  2715.0     floor  47.28 dB sat 0 fails 0
+F  2718.0 MHz pll  2718.0     floor  47.07 dB sat 0 fails 0
+F  2721.0 MHz pll  2721.0     floor  46.99 dB sat 0 fails 0
+F  2724.0 MHz pll  2724.0     floor  46.79 dB sat 0 fails 0
+F  2727.0 MHz pll  2727.0     floor  46.74 dB sat 0 fails 0
+F  2730.0 MHz pll  2730.0     floor  46.40 dB sat 0 fails 0
+F  2733.0 MHz pll  2733.0     floor  46.22 dB sat 0 fails 0
+F  2736.0 MHz pll  2736.0     floor  46.23 dB sat 0 fails 0
+F  2739.0 MHz pll  2739.0     floor  46.19 dB sat 0 fails 0
+F  2742.0 MHz pll  2742.0     floor  46.07 dB sat 0 fails 0
+F  2745.0 MHz pll  2745.0     floor  46.17 dB sat 0 fails 0
+F  2748.0 MHz pll  2748.0     floor  46.10 dB sat 0 fails 0
+F  2751.0 MHz pll  2751.0     floor  46.32 dB sat 0 fails 0
+F  2754.0 MHz pll  2754.0     floor  46.08 dB sat 0 fails 0
+F  2757.0 MHz pll  2757.0     floor  46.18 dB sat 0 fails 0
+F  2760.0 MHz pll  2760.0     floor  46.08 dB sat 0 fails 0
+F  2763.0 MHz pll  2763.0     floor  46.07 dB sat 0 fails 0
+F  2766.0 MHz pll  2766.0     floor  45.93 dB sat 0 fails 0
+F  2769.0 MHz pll  2769.0     floor  45.88 dB sat 0 fails 0
+F  2772.0 MHz pll  2772.0     floor  45.86 dB sat 0 fails 0
+F  2775.0 MHz pll  2775.0     floor  45.87 dB sat 0 fails 0
+F  2778.0 MHz pll  2778.0     floor  45.92 dB sat 0 fails 0
+F  2781.0 MHz pll  2781.0     floor  45.84 dB sat 0 fails 0
+F  2784.0 MHz pll  2784.0     floor  45.72 dB sat 0 fails 0
+F  2787.0 MHz pll  2787.0     floor  45.66 dB sat 0 fails 0
+F  2790.0 MHz pll  2790.0     floor  45.68 dB sat 0 fails 0
+F  2793.0 MHz pll  2793.0     floor  45.65 dB sat 0 fails 0
+F  2796.0 MHz pll  2796.0     floor  45.52 dB sat 0 fails 0
+F  2799.0 MHz pll  2799.0     floor  45.32 dB sat 1 fails 0
+F  2802.0 MHz pll  2802.0     floor  45.34 dB sat 0 fails 0
+done

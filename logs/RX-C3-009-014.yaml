@@ -49,3 +49,19 @@
   capture_path: captures/gs_2437_g*.json, captures/bc80_*, captures/bc_2432_*, captures/bc_2442_*, captures/m16_*, captures/m80_*, logs/RX-C3-016_mech_analysis.txt
   result: fs = 16.000 MS/s (beacon clock); analog bandwidth +-10..11 MHz; 16 MS/s mode aliases the -11 MHz spur to +5 MHz (no anti-alias filter); image >= 19 dB down; DC (-1,-8) LSB at 2437; noise rms I 2.7 Q 1.8; gain ~1 dB/step with a ~10 dB step at 25->30; bit17 not a packet trigger
   interpretation: verified; the engine delivers raw 10-bit analog-filtered I/Q at 80 MS/s, 16 MS/s is a plain 1/5 decimation
+- experiment_id: RX-C3-017
+  title: LO-fundamental sweep 1842-2803 MHz for k-th order (k=3,4,5) response to UHF ISDB-T broadcasts
+  date: 2026-10-18
+  soc: ESP32-C3 rev v0.4
+  rx_method: 40 MS/s one-shot x6 per point, gain 60, median PSD, 3 MHz steps, 5/6 CKGEN mode below 2203 MHz, two runs
+  rf_input_mhz: ambient (real ISDB-T broadcasts as the UHF source; LTE Band 1/3 downlinks observed)
+  capture_path: logs/RX-C3-017_sweep1.json, logs/RX-C3-017_sweep2.json, logs/RX-C3-017_sweep_run.txt
+  control_result: LTE Band 1 (2110-2170) and Band 3 (1845-1880) downlinks seen at +10..+30 dB with band edges exact -> 5/6 mode receives external RF
+  result: no elevation at 3fc/4fc/5fc for channels 13-52; residual sigma 0.39 dB, max +1.3 dB at k*fc points
+  interpretation: verified null; any k-th order UHF response is within +1.5 dB of the gain-60 noise floor in this environment
+- experiment_id: RX-C3-018
+  title: Lane-select 0x60033D90 values 0..63
+  date: 2026-10-18
+  capture_path: logs/RX-C3-018_lane_probe_forced.json, logs/RX-C3-018_lane_probe_normal.json, captures/lane_*.bin
+  result: forced RX: only lanes 0..3 (I/Q bytes) vary; lanes 4..63 static status bytes
+  interpretation: see docs for the normal-RX condition
