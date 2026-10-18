@@ -1,0 +1,5 @@
+captures/test_2437_16M.sigmf-meta: rate 16000000 ci16_le mode snapshot lo_mode 1 blocks 44 pitch_us {'min': 66936, 'median': 68840, 'max': 71007} duty 0.0149 sent 44 truncated 0 resyncs 0
+captures/test_2437_1M.sigmf-meta: rate 1000000 ci8 mode duty lo_mode 1 blocks 1281 pitch_us {'min': 1340, 'median': 2337, 'max': 2511} duty 0.4382 sent 1281 truncated 0 resyncs 0
+captures/test_2437_250k.sigmf-meta: rate 250000 ci8 mode duty lo_mode 1 blocks 2250 pitch_us {'min': 1332, 'median': 1333, 'max': 1368} duty 0.7682 sent 2250 truncated 0 resyncs 0
+captures/lte_b1_2140_250k.sigmf-meta: rate 250000 ci8 mode duty lo_mode 5/6 blocks 1500 pitch_us {'min': 1332, 'median': 1333, 'max': 1344} duty 0.7682 sent 1500 truncated 0 resyncs 0
+captures/lte_b1_2140_40M.sigmf-meta: rate 40000000 ci16_le mode snapshot lo_mode 5/6 blocks 31 pitch_us {'min': 2273, 'median': 65883, 'max': 66307} duty 0.0062 sent 31 truncated 0 resyncs 0
