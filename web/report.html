@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESP32-C3 受信レポート（ライブ）</title>
+<style>
+  :root { --bg:#0f1115; --fg:#e6e6e6; --mut:#9aa3b0; --acc:#4fc3f7; --card:#171a21; --line:#2a2f3a; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 -apple-system,"Hiragino Sans","Helvetica Neue",sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:10px 16px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+  h1 { font-size:17px; margin:0 8px 0 0; color:var(--acc); }
+  button,select { background:#22262f; color:var(--fg); border:1px solid #3a4150; border-radius:5px; padding:6px 11px; font-size:14px; cursor:pointer; }
+  button.primary { background:#1d4e89; border-color:#2b6cb0; } button:disabled { opacity:.4; cursor:default; }
+  main { max-width:780px; margin:0 auto; padding:14px 16px; }
+  .now { font-size:13px; color:var(--mut); margin-bottom:10px; }
+  .cards { display:flex; flex-direction:column; gap:8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; display:flex; align-items:center; gap:12px; animation:fade .3s; }
+  @keyframes fade { from { opacity:0; transform:translateY(-4px);} to { opacity:1;} }
+  .ic { font-size:26px; width:34px; text-align:center; }
+  .card .t { font-size:16px; font-weight:600; } .card .s { font-size:13px; color:var(--mut); }
+  .card .r { margin-left:auto; text-align:right; font-size:13px; color:var(--mut); }
+  .bar { height:7px; border-radius:4px; background:#333; overflow:hidden; width:90px; margin-top:4px; }
+  .bar > i { display:block; height:100%; background:linear-gradient(90deg,#4caf50,#ffc107,#f44336); }
+  h2 { font-size:14px; color:var(--mut); margin:18px 0 6px; border-bottom:1px solid var(--line); padding-bottom:3px; }
+  .ev { font:12.5px/1.5 ui-monospace,Menlo,monospace; max-height:200px; overflow:auto; background:#12151b; border:1px solid var(--line); border-radius:8px; padding:8px; }
+  .big { font-size:34px; } .hint { color:var(--mut); font-size:13px; }
+  .pill { display:inline-block; background:#22262f; border-radius:12px; padding:2px 9px; font-size:12px; margin:2px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>受信レポート（ライブ）</h1>
+  <button id="connect" class="primary">接続</button>
+  <select id="mode">
+    <option value="remote">照明リモコン監視 (2402 MHz)</option>
+    <option value="ble">BLE 広告監視 (ch37/38/39 巡回)</option>
+    <option value="wifi24">Wi-Fi/2.4GHz 全体を見る</option>
+    <option value="scan">全帯域を一度スキャン</option>
+  </select>
+  <button id="go" disabled>開始</button><button id="stop" disabled>停止</button>
+  <span id="st" class="hint">未接続</span>
+</header>
+<main>
+  <div class="now" id="now"></div>
+  <div class="cards" id="cards"><div class="hint">接続して「開始」を押すと、受信したものがここに分かりやすく並びます。</div></div>
+  <h2>イベント（新しい順）</h2>
+  <div class="ev" id="events"></div>
+</main>
+<script src="dsp.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const PROFILES=[{"sync": "adf645c7", "rate": 1000000.0, "main_variant": "cfbd6dbf", "command_bytes": [23, 30], "cmd_mask": [255, 252], "labels": {"4200": "点灯", "4600": "消灯", "8650": "明るさ↑", "86a0": "明るさ↓", "8660": "昼光色", "8690": "電球色", "8608": "全灯"}, "name": "living_light"}];
+// ---- serial / frame (ESPW, 0xFF-free) ----
+const PLL_MIN=2203e6,PLL_MAX=2803e6;
+function loPlan(hz){ if(hz>=PLL_MIN&&hz<=PLL_MAX)return{pllKhz:Math.round(hz/1e3),alt:false}; const p=hz*6/5; if(p>=PLL_MIN&&p<=PLL_MAX)return{pllKhz:Math.round(p/1e3),alt:true}; throw new Error("範囲外"); }
+const FULL={80000000:0x03fff,40000000:0x0bfff,16000000:0x13fff},SHIFT={4:2,8:3,16:4,32:5,64:6,128:7,256:8};
+function ratePlan(r){ if(FULL[r]!==undefined)return{ctrl:FULL[r],decim:1,shift:0}; const d=16000000/r; return{ctrl:0x13fff,decim:d,shift:SHIFT[d]}; }
+let port,reader,writer,textBuf="",bin=new Uint8Array(0),binMode=false,frameSink=null,onEnd=null,running=false,drops=0;
+const enc=new TextEncoder(),dec=new TextDecoder();
+async function send(l){ await writer.write(enc.encode("\n"+l+"\n")); }
+async function cmdWait(line,re,ms=1500){ re=re instanceof RegExp?re:new RegExp("^"+re,"m"); for(let a=0;a<3;a++){ binMode=false;textBuf=""; await send(line); const t0=performance.now(); while(performance.now()-t0<ms){ if(re.test(textBuf))return textBuf; if(/^ERR/m.test(textBuf))break; await new Promise(r=>setTimeout(r,15)); } await writer.write(enc.encode(a?"\n":"x\n")); await new Promise(r=>setTimeout(r,400)); } throw new Error("応答なし: "+line); }
+async function pump(){ while(port&&port.readable){ reader=port.readable.getReader(); try{ for(;;){ const{value,done}=await reader.read(); if(done)break; if(value)onBytes(value);} }catch(e){} finally{ try{reader.releaseLock();}catch(_){} } await new Promise(r=>setTimeout(r,20)); } }
+function onBytes(ch){ if(!binMode){ textBuf+=dec.decode(ch); if(textBuf.length>20000)textBuf=textBuf.slice(-10000); return; }
+  const nb=new Uint8Array(bin.length+ch.length); nb.set(bin); nb.set(ch,bin.length); bin=nb;
+  for(;;){ const k=idxMagic(bin); if(k<0){ const s=dec.decode(bin); const e=s.indexOf("STREAM2 end"); if(e>=0&&s.indexOf("END\r\n",e)>=0){ endStream(); bin=new Uint8Array(0);} else if(bin.length>65536)bin=bin.slice(-65536); return; }
+    if(k>0){ const s=dec.decode(bin.slice(0,k)); if(s.indexOf("STREAM2 end")>=0)endStream(); bin=bin.slice(k); }
+    if(bin.length<19)return; const u7=(o,n)=>{let v=0;for(let i=0;i<n;i++)v+=(bin[o+i]&0x7f)*Math.pow(2,7*i);return v;};
+    const tus=u7(9,5),nsamp=u7(14,3),fmt=bin[17],flags=bin[18],plen=nsamp*2; if(bin.length<19+plen)return;
+    const nx=bin.slice(19+plen,19+plen+4); if(nx.length===4&&!(nx[0]===69&&nx[1]===83&&nx[2]===80&&nx[3]===87)&&!(nx[0]===13&&nx[1]===10)){drops++;bin=bin.slice(4);continue;}
+    if(frameSink)frameSink(tus,nsamp,fmt,bin.slice(19,19+plen)); bin=bin.slice(19+plen); } }
+function idxMagic(a){ for(let i=0;i+3<a.length;i++) if(a[i]===69&&a[i+1]===83&&a[i+2]===80&&a[i+3]===87)return i; return -1; }
+function endStream(){ binMode=false; if(onEnd){const f=onEnd;onEnd=null;f();} }
+async function stopStream(){ if(!binMode)return; let done=false; const p=onEnd; onEnd=()=>{done=true;if(p)p();}; await writer.write(enc.encode("x")); const t0=performance.now(); while(!done&&performance.now()-t0<1500)await new Promise(r=>setTimeout(r,30)); binMode=false; onEnd=null; }
+$("connect").onclick=async()=>{ if(!("serial"in navigator)){alert("Chrome/Edge で開いてください");return;}
+  try{ port=await navigator.serial.requestPort({filters:[{usbVendorId:0x303a}]}); await port.open({baudRate:115200}); writer=port.writable.getWriter(); pump();
+    await writer.write(enc.encode("x\n")); await new Promise(r=>setTimeout(r,600)); textBuf="";
+    await cmdWait("INFO",/^RXPROBE/m); $("st").textContent="接続済み"; $("go").disabled=false; }
+  catch(e){ $("st").textContent="接続失敗: "+e.message; } };
+async function setupRadio(loHz,gain){ const plan=loPlan(loHz); await cmdWait("TUNE "+plan.pllKhz,/^OK TUNE/m);
+  const rep=await cmdWait("I2C 65 0",/^I2C 65:0 = ([0-9a-f]{2})/m); const cur=parseInt(rep.match(/^I2C 65:0 = ([0-9a-f]{2})/m)[1],16); const want=plan.alt?(cur|0x10):(cur&~0x10);
+  if(want!==cur)await cmdWait("I2CW 65 0 "+want.toString(16).padStart(2,"0"),/^I2CW/m,800).catch(()=>{});
+  await cmdWait("GAIN "+gain,/^OK GAIN/m); await cmdWait("WR 60033d90 000c2040",/^WR 60033d90 = /m,800).catch(()=>{}); return plan; }
+// ---- live state: aggregate "what we're receiving" ----
+const seen=new Map();   // key -> {icon,title,sub,strength,count,last,kind}
+let floorTrack=null, nfft=512, re,im,win;
+function addEvent(txt){ const el=$("events"); const d=document.createElement("div"); d.textContent=new Date().toLocaleTimeString()+"  "+txt; el.insertBefore(d,el.firstChild); while(el.children.length>80)el.removeChild(el.lastChild); }
+function note(key,o){ const e=seen.get(key)||{count:0}; Object.assign(e,o); e.count++; e.last=performance.now(); seen.set(key,e); renderCards(); }
+function renderCards(){ const arr=[...seen.values()].sort((a,b)=>b.last-a.last).slice(0,20);
+  $("cards").innerHTML=arr.map(e=>`<div class="card"><div class="ic">${e.icon}</div><div><div class="t">${e.title}</div><div class="s">${e.sub||""}</div></div><div class="r">${e.count}回<div class="bar"><i style="width:${Math.min(100,Math.max(8,(e.strength||0)))}%"></i></div></div></div>`).join("")||'<div class="hint">まだ何も受信していません…</div>'; }
+function setNow(t){ $("now").textContent=t; }
+// ---- modes ----
+let curMode=null;
+async function runRemote(){ // watch 2402 MHz for the lighting remote at 16 MS/s, event mode
+  const prof=PROFILES[0]; setNow("2402 MHz を監視中（照明リモコン）。リモコンのボタンを押すと表示されます。");
+  const rate=16000000, rp=ratePlan(rate); await setupRadio(2402e6,30);
+  frameSink=(tus,nsamp,fmt,payload)=>{ if(!nsamp)return; const {I,Q}=DSP.unpackWeb(payload);
+    const r=DSP.profileDecode(I,Q,rate,prof); if(r&&r.label){ note("remote:"+r.cmd,{icon:"🎛",title:"リモコン操作: "+r.label,sub:"living_light ("+r.cmd+")",strength:90,kind:"remote"}); addEvent("リモコン: "+r.label); }
+    else { // still show that a 2.4GHz burst was heard
+      const db=DSP.psd(I,Q,nfft,win,re,im); const pk=Math.max(...db); if(pk-DSP.median(db)>12) note("rf2402",{icon:"📻",title:"2.4 GHz の電波を受信",sub:"未復号のバースト",strength:40,kind:"rf"}); } };
+  await stream(rp,rate,30,45);
+}
+async function runBle(){ const chans=[[2402,37],[2426,38],[2480,39]]; let ci=0; setNow("BLE 広告チャネルを巡回監視中。周囲の BLE 機器が表示されます。");
+  for(;running;){ const [mhz,ch]=chans[ci%3]; ci++; const rate=4000000, rp=ratePlan(rate); await setupRadio(mhz*1e6,40);
+    frameSink=(tus,nsamp,fmt,payload)=>{ if(!nsamp)return; const {I,Q}=DSP.unpackWeb(payload);
+      for(const h of DSP.bleDecode(I,Q,rate,ch)) if(h.crcOk){ note("ble:"+h.adva,{icon:"🔵",title:"BLE 機器 "+h.adva,sub:h.pduType+(h.ad?" / "+h.ad:""),strength:70,kind:"ble"}); addEvent("BLE "+h.adva+" "+h.pduType); } };
+    await stream(rp,rate,6,45); if(!running)break; }
+}
+async function runWifi(){ setNow("2437 MHz (Wi-Fi ch6) 付近を監視中。見えている信号を分類します。"); const rate=16000000, rp=ratePlan(rate); await setupRadio(2437e6,30); floorTrack=DSP.makeFloor(nfft);
+  frameSink=(tus,nsamp,fmt,payload)=>{ if(!nsamp)return; const {I,Q}=DSP.unpackWeb(payload); const db=DSP.psd(I,Q,nfft,win,re,im); const fl=floorTrack.update(db);
+    for(const d of DSP.detect(db,rate,10,fl)){ const cl=DSP.classify(d,2437,rate,1); if(cl.kind==="internal")continue; const k=cl.kind+":"+Math.round(cl.rfC); note(k,{icon:cl.kind==="wifi"?"📶":cl.kind==="ble"?"🔵":cl.kind==="lte"?"📡":"📻",title:cl.label.split(" —")[0],sub:cl.rfLo.toFixed(1)+"〜"+cl.rfHi.toFixed(1)+" MHz / "+cl.conf,strength:Math.min(100,d.peakDb*4),kind:cl.kind}); } };
+  await stream(rp,rate,60,0);
+}
+async function stream(rp,rate,secs,thr){ nfft=rate>=16e6?1024:512; re=new Float32Array(nfft);im=new Float32Array(nfft);win=Float32Array.from({length:nfft},(_,i)=>0.5-0.5*Math.cos(2*Math.PI*i/(nfft-1)));
+  bin=new Uint8Array(0); await new Promise(async res=>{ onEnd=res; binMode=true; await send(`STREAM2 ${rp.ctrl.toString(16)} 16384 ${rp.decim} ${rp.shift} ${secs*1000} ${thr} 1`); setTimeout(res,secs*1000+2000); }); }
+$("go").onclick=async()=>{ if(running)return; running=true; curMode=$("mode").value; seen.clear(); renderCards(); $("go").disabled=true; $("stop").disabled=false; $("st").textContent="受信中";
+  try{ for(;running;){ if(curMode==="remote")await runRemote(); else if(curMode==="ble"){await runBle();break;} else if(curMode==="wifi24")await runWifi(); else {await scanOnce();break;} if(!running)break; } }
+  catch(e){ addEvent("エラー: "+e.message); } finally{ await stopStream(); running=false; $("go").disabled=false; $("stop").disabled=true; $("st").textContent="接続済み"; } };
+$("stop").onclick=async()=>{ running=false; await stopStream(); };
+async function scanOnce(){ setNow("1842〜2803 MHz を一度スキャン中…"); const rate=40000000,rp=ratePlan(rate); nfft=1024; re=new Float32Array(nfft);im=new Float32Array(nfft);win=Float32Array.from({length:nfft},(_,i)=>0.5-0.5*Math.cos(2*Math.PI*i/(nfft-1)));
+  const found=new Map();
+  for(let L=1842;L<=2803&&running;L+=10){ await setupRadio(L*1e6,50); let got=null;
+    await new Promise(async res=>{ onEnd=res; frameSink=(tus,ns,fmt,pl)=>{ if(!got&&ns){const u=DSP.unpackWeb(pl); got=DSP.psd(u.I,u.Q,nfft,win,re,im);} }; binMode=true; await send(`STREAM2 bfff 16384 1 0 250 0 1`); setTimeout(res,2200); });
+    if(!got)continue; const f=Array.from({length:nfft},(_,i)=>(i/nfft-0.5)*39.97); const med=DSP.median(got);
+    for(let i=0;i<nfft;i++){ if(Math.abs(f[i])>10)continue; if(got[i]-med>12){ const rf=Math.round(L-f[i]); const b=DSP.bandsAt(rf).filter(x=>x.kind!=="ism")[0]; if(b){ const k=b.name; const e=found.get(k)||0; found.set(k,Math.max(e,got[i]-med)); } } }
+    setNow("スキャン中 "+L+" MHz…"); renderScan(found); }
+  setNow("スキャン完了。見つかった信号帯:"); renderScan(found);
+}
+function renderScan(found){ const arr=[...found.entries()].sort((a,b)=>b[1]-a[1]); seen.clear();
+  for(const [name,db] of arr){ const kind=name.startsWith("Wi-Fi")?"wifi":name.startsWith("BLE")?"ble":name.startsWith("Zig")?"ble":name.startsWith("LTE")||name.startsWith("TD")?"lte":name.startsWith("J-DECT")?"lte":"rf";
+    seen.set(name,{icon:kind==="wifi"?"📶":kind==="ble"?"🔵":kind==="lte"?"📡":"📻",title:name,sub:"+"+db.toFixed(0)+" dB",strength:Math.min(100,db*4),count:1,last:1e12-arr.indexOf([name,db])}); }
+  renderCards(); }
+window.addEventListener("beforeunload",()=>{try{if(writer)writer.write(enc.encode("x\n"));}catch(_){}});
+renderCards();
+</script>
+</body>
+</html>

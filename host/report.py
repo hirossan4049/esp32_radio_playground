@@ -136,6 +136,24 @@ def main():
     tall = (np.array([tm for tm, _ in full], dtype=np.int64) - full[0][0]) / 1e6
     ax.plot(tall, amp, lw=0.6); ax.set_xlabel("時刻 s"); ax.set_ylabel("ブロック平均|x|"); ax.set_title("受信強度の時間推移"); ax.grid(alpha=0.3)
     img2 = fig_to_b64(fig2)
+    # --- plain-language summary ---
+    summary = []
+    namedsig = [d for d in dets if d["kind"] not in ("internal", "unknown") and d["conf"] == "バンド表と一致"]
+    kinds_present = collections.Counter(d["kind"] for d in namedsig)
+    if remote_rows:
+        buttons = collections.Counter(lab for _, lab, _ in remote_rows if lab)
+        if buttons: summary.append(f"🎛 リモコン「{remote_name}」の操作を {sum(buttons.values())} 回受信: " + "、".join(f"{k}×{v}" for k, v in buttons.most_common()))
+        else: summary.append(f"🎛 リモコン「{remote_name}」のパケットを受信（ボタン未確定 {len(remote_rows)} 件）")
+    if ble_rows: summary.append(f"🔵 BLE 機器 {len(ble_rows)} 台の広告を復号（CRC OK）")
+    wifi = [d for d in namedsig if d["kind"] == "wifi"]
+    if wifi: summary.append(f"📶 Wi-Fi 信号: " + "、".join(sorted({d['label'].split(' —')[0] for d in wifi}))[:80])
+    lte = [d for d in namedsig if d["kind"] in ("lte",)]
+    if lte: summary.append(f"📡 携帯基地局(LTE)らしき連続波: " + "、".join(sorted({d['label'].split(' —')[0] for d in lte}))[:80])
+    if not summary: summary.append("既知の信号は検出されませんでした（雑音のみ、または未知の信号）。")
+    peakdbfs = 20 * np.log10(max(1, peak.max()) / fullscale)
+    cond = "適正" if -12 < peakdbfs < -2 else ("飽和気味（ゲインを下げてください）" if peakdbfs >= -2 else "弱め（ゲインを上げると改善）")
+    summary.append(f"📈 受信強度は{cond}（ピーク {peakdbfs:.0f} dBFS）。")
+    summ_html = "".join(f"<li>{s}</li>" for s in summary)
     # --- html ---
     alt = g.get(EXT + ":lo_mode", "1"); mode = g.get(EXT + ":capture_mode", "?")
     def tr(cells): return "<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>"
@@ -152,6 +170,7 @@ img{{width:100%;border:1px solid #ddd;border-radius:4px}}.k{{display:inline-bloc
 .note{{color:#777;font-size:12px}}</style></head><body>
 <h1>受信レポート</h1>
 <p class=note>ファイル {os.path.basename(a.file)} ／ 生成 {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} ／ ESP32-C3 受信（送信なし）</p>
+<div class=summary><h2 style=border:none;margin-top:0>受信したもの</h2><ul>{summ_html}</ul></div>
 <h2>1. 受信条件</h2><div class=kv>
 <b>中心周波数(LO)</b><span>{f0/1e6:.3f} MHz（{'5/6 変換モード' if alt!='1' else '直接'}）</span>
 <b>サンプルレート</b><span>{fs/1e6:g} MS/s（{mode}）</span>

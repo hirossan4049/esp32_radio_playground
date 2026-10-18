@@ -140,6 +140,36 @@ const DSP = (() => {
     }
     return hits;
   }
-  return { BANDS, KIND_COLOR, INTERNAL_BB, bandsAt, internalAt, fft, unpack, unpackWeb, psd, median, makeFloor, detect, classify, bleDecode };
+  // ---------- generic 1 Mbps GFSK packet decode against a device profile ----------
+  // profile = { sync:"adf645c7", main_variant:"cfbd6dbf", nbytes, command_bytes:[...], cmd_mask:[...], labels:{hex:name} }
+  function syncPos(bits, pat, maxerr) {   // bits: Int8Array; pat: array of 0/1
+    for (let k = 0; k + pat.length <= bits.length; k++) { let d = 0; for (let i = 0; i < pat.length; i++) if (bits[k + i] !== pat[i]) { if (++d > maxerr) break; } if (d <= maxerr) return k + pat.length; }
+    return -1;
+  }
+  function gfskBits(I, Q, fs, rate) {   // conj (LO-RF), discriminator, hard bits at best phase; returns Int8Array
+    const n = I.length, sps = fs / rate; const d = new Float32Array(n - 1);
+    for (let i = 0; i < n - 1; i++) { const a = I[i], b = -Q[i], c = I[i + 1], e = -Q[i + 1]; d[i] = Math.atan2(e * a - c * b, c * a + e * b); }
+    const k = Math.max(1, Math.round(sps / 2)); const sm = new Float32Array(d.length);
+    for (let i = 0; i < d.length; i++) { let s = 0, c = 0; for (let j = i - (k >> 1); j <= i + (k >> 1); j++) if (j >= 0 && j < d.length) { s += d[j]; c++; } sm[i] = s / c; }
+    const env = new Float32Array(n); let mx = 0; for (let i = 0; i < n; i++) { env[i] = Math.hypot(I[i], Q[i]); if (env[i] > mx) mx = env[i]; }
+    let start = 0; for (let i = 0; i < n; i++) if (env[i] > 0.3 * mx) { start = i; break; }
+    let best = null;
+    for (let p = 0; p < sps; p++) { const idx = []; for (let x = start + p; x < sm.length; x += sps) idx.push(Math.round(x)); const v = idx.map(i => sm[i]); const med = v.slice().sort((a, b) => a - b)[v.length >> 1]; const score = v.reduce((s, x) => s + Math.abs(x - med), 0) / v.length; if (!best || score > best.score) best = { score, bits: Int8Array.from(v, x => x - med > 0 ? 1 : 0) }; }
+    return best ? best.bits : new Int8Array(0);
+  }
+  function profileDecode(I, Q, fs, prof) {
+    const syncpat = [...prof.sync].flatMap((_, i) => i % 1 === 0 ? [] : []).length ? null : null;
+    const sbits = []; const sv = parseInt(prof.sync, 16); const slen = prof.sync.length * 4; for (let i = slen - 1; i >= 0; i--) sbits.push((sv >> i) & 1);
+    const bits = gfskBits(I, Q, fs, prof.rate || 1e6); if (bits.length < slen + 40) return null;
+    const k = syncPos(bits, sbits, 3); if (k < 0) return null;
+    const need = (Math.max(...prof.command_bytes) + 1) * 8; if (k + need > bits.length) return null;
+    const byteAt = j => { let v = 0; for (let i = 0; i < 8; i++) v = (v << 1) | bits[k + j * 8 + i]; return v; };
+    const variant = [0, 1, 2, 3].map(j => byteAt(j).toString(16).padStart(2, "0")).join("");
+    if (prof.main_variant && variant !== prof.main_variant) return { variant };
+    const raw = prof.command_bytes.map((j, i) => byteAt(j) & (prof.cmd_mask ? prof.cmd_mask[i] : 0xff));
+    const hex = raw.map(v => v.toString(16).padStart(2, "0")).join("");
+    return { variant, cmd: hex, label: (prof.labels || {})[hex] || "", bytes: raw };
+  }
+  return { BANDS, KIND_COLOR, INTERNAL_BB, bandsAt, internalAt, fft, unpack, unpackWeb, psd, median, makeFloor, detect, classify, bleDecode, gfskBits, profileDecode };
 })();
 if (typeof module !== "undefined") module.exports = DSP;

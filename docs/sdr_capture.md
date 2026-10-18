@@ -81,3 +81,9 @@ int8 I/Q には −1,0,0 が頻出するため、ブラウザ用フレームは 
 python3 host/report.py captures/web/remote_seq4.sigmf-meta --open
 ```
 検出信号はバンド表（host/bands.py, web/dsp.js と共通）で命名・分類し、出現率（検出ブロック割合）と信頼度を付す。リモコンは profiles/*.json に一致すればボタン名付きで押下を一覧する。
+
+## ライブ受信レポート（web/report.html）
+WebSerial で接続し、「何を受信しているか」を平易な日本語でリアルタイム表示する。スペクトル中心の esp32sdr.html と別に、結果だけを見たい人向け。
+- モード: 「照明リモコン監視」=2402 MHz で profiles/ のリモコンを復号し押したボタンを表示 / 「BLE 広告監視」=ch37/38/39 を巡回し周囲の BLE 機器を表示 / 「Wi-Fi/2.4GHz」=2437 MHz 付近の信号を分類 / 「全帯域スキャン」=1842〜2803 MHz を一度見渡して信号帯を列挙。
+- 受信したものはカード（アイコン＋名前＋強さ＋回数）で新しい順に並び、下にイベント履歴。送信は一切しない。
+- リモコン復号は dsp.js の profileDecode（host/rfproto.py の移植、node で同一結果を確認）。別機種は rfproto.py learn で作ったプロファイルを report.html の PROFILES に足せば対応。
