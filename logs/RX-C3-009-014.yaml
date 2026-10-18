@@ -78,3 +78,9 @@
   control_result: 216 flips, 0 hangs; 0x67 reg2 bit5 kills the receiver (baseband enable, cf. rom1_phy_close_rf)
   result: all other flips keep ratio 1; no LO divider or alternate conversion
   interpretation: with RX-C3-011, all RF-domain analog blocks are covered by single-bit flips; conversion ratios remain {1, 5/6}
+- experiment_id: RX-C3-021
+  title: General-purpose capture tools - STREAM2 frames, SigMF, spectrum, sweep
+  date: 2026-10-18
+  capture_path: captures/test_2437_{16M,250k,1M}.sigmf-*, captures/sweep_full.json, captures/lte_b1_2140_*
+  result: 250 kS/s 76.8% coverage, 1 MS/s 43.8% (USB bound), 16 MS/s snapshots 1.5%; beacons decode from SigMF; sweep finds LTE B1/B3/B41 and Wi-Fi
+  interpretation: capture / replay / spectrum goals met within the C3 limits; 5/6 LO region has an internal spur comb

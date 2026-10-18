@@ -292,6 +292,24 @@ USB シリアル番号 = MAC E8:F6:0A:16:BD:84。開発ボード型式は不明�
 - 0x67 BBTOP（regs 0〜15, 128 反転, `logs/RX-C3-011_flip_blk67.json`; TX 電力系の reg 0x1c〜0x1f は対象外）[実測]: 127 反転で **r = 1**、ハング 0。唯一の異常は reg2 bit5（0x26→0x06）で
   受信が消える（I 標準偏差 2、マーカ 0/16。空スペクトルへの「1/2」フィットは偶然）。libphy `rom1_phy_close_rf` が reg2 に 0x06 を書くことから、これはベースバンド電源/イネーブルビットであり分周器ではない。
 - 結論: RF ドメインの全ブロック（0x62 RFPLL, 0x63 SDM, 0x65 CKGEN, 0x64, 0x67 BBTOP）の単ビット反転で得られる受信変換比は **{1, 5/6} のみ**（RX-C3-011 と合わせ 552 反転）。全 64 レジスタの読み出し `logs/RX-C3-020_i2c_blk67_0_63.json`（0x1c〜0x1f = 1e、0x24〜 は phy_i2c_init2 の初期値 48 08 90 90 … と一致）。
+### RX-C3-021: 汎用 RF キャプチャ装置としての整備 — STREAM2 フレーム、SigMF、スペクトル、掃引（2026-10-18）
+- 方針転換（ユーザ合意）: 特定規格の復調より先に、**同調可能帯域（約 1836〜2803 MHz）で生 I/Q を取得・保存・解析できる装置**として完成させる（RTL-SDR の ESP32 版）。RF 取得層（`host/esp32sdr/device.py`）と
+  解析層（`sigmf.py`, `spectrum.py`, `sweep.py`, `sigmf2wav.py`）を分離。詳細は `docs/sdr_capture.md`。
+- ファーム `STREAM2`: 各ブロックを `"ESPB"|seq|t_us|nsamp|fmt|flags` フレームで送出。間引きモードはコピー→即再始動→間引き＋送信（CSTREAM2 型）。
+- 実測（`captures/test_2437_*.sigmf-meta`、`logs/RX-C3-021_capture_stats.txt`）:
+
+  | 設定 | ブロック間隔 (median) | 捕捉率 | フレーム欠落 |
+  |---|---|---|---|
+  | 250 kS/s int8（decim 64） | 1.333 ms | **76.8%** | 0 / 2250 |
+  | 1 MS/s int8（decim 16） | 2.337 ms | 43.8%（USB 律速、落とさず遅延） | 0 / 1281 |
+  | 16 MS/s int16 スナップショット | 68.8 ms | 1.5%（64 KiB/フレーム） | 0 / 44 |
+
+- Replay の実証: 16 MS/s の SigMF から `dsss.py` が 2 つの AP のビーコンを CRC OK で復号（SSID "0C73294B0CD9-2G", "LOCALHOUSE_SPACE"）。
+- 掃引（`sweep.py`, 1842〜2803 MHz, 20 MHz 刻み, 40 MS/s, ゲイン 50, `captures/sweep_full.json/.png`）[実測]: 検出帯域 1855〜1880（LTE Band 3 下り）、2111〜2169（Band 1 下り）、2450〜2463（Wi-Fi）、
+  2546〜2571（Band 41）、2626〜2628。**5/6 モード側（LO < 2203）は約 20 MHz 間隔の内部スプリアス櫛（1900, 1941, 1980, 2020, 2040, 2062 MHz 付近）と床の段差があり**、通常モード側より検出信頼性が低い（要因未特定: PLL 基本波の漏れ込みと水晶高調波の混合と推定 [仮説]）。
+  全 LO で基底帯 +2.0 MHz に固定スプリアス（LO−2 MHz）。
+- 5/6 モードでの CLI 検証: `capture.py --freq 2140`（PLL 2568 MHz）で Band 1 下りを取得（`captures/lte_b1_2140_*`）。
+
 
 ## 最終評価（2026-10-17、ESP32-C3 実機）
 | レベル | 判定 | 根拠 |

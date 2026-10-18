@@ -15,6 +15,11 @@ import numpy as np
 BARKER = np.array([1, -1, 1, 1, -1, 1, 1, 1, -1, -1, -1], dtype=float)   # IEEE 802.11 chip sequence (+1 -1 +1 +1 -1 +1 +1 +1 -1 -1 -1)
 
 def load(path):
+    if path.endswith(".sigmf-meta") or path.endswith(".sigmf-data"):
+        import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from esp32sdr.sigmf import read_sigmf
+        meta, blocks = read_sigmf(path)
+        return [b for _, b in blocks]                       # list of blocks; main() iterates
     w = np.fromfile(path, dtype="<u4")
     i = ((w & 1023) ^ 512).astype(np.int32) - 512
     q = (((w >> 10) & 1023) ^ 512).astype(np.int32) - 512
@@ -135,18 +140,22 @@ def main():
     ap.add_argument("--conj", action="store_true"); ap.add_argument("--dump", action="store_true")
     args = ap.parse_args()
     for f in args.files:
-        x = load(f); print(f)
-        print(f"  peak |I|,|Q| {max(np.abs(x.real).max(), np.abs(x.imag).max()):.0f}  mean |x| {np.abs(x).mean():.0f}")
-        for conj in ([args.conj] if args.conj else [False, True]):
-            bits, soft, amp, sym = demod(x, args.fs, conj=conj)
-            de, frames = find_frames(bits, soft)
-            print(f"  conj={conj}: {len(frames)} SFD hit(s); descrambled ones-fraction {de.mean():.2f}")
-            for fr in frames:
-                print(f"   {fr['kind']} SFD at symbol {fr['sfd_at']}  SIGNAL=0x{fr['signal']:02x} SERVICE=0x{fr['service']:02x} LENGTH={fr['length_us']} us  CRC {'OK' if fr['crc_ok'] else 'BAD'}  sync soft {fr['sync_soft']:.2f}")
-                psdu_bits = de[fr["psdu_start"]:]
-                psdu = bits_to_bytes_lsb(psdu_bits)
-                print("    " + parse_mac(psdu))
-                if args.dump: print("    bytes:", bytes(psdu[:64]).hex())
-            if frames: break
+        loaded = load(f)
+        blocks = loaded if isinstance(loaded, list) else [loaded]
+        for bi, x in enumerate(blocks):
+          if len(blocks) > 1: print(f"{f} block {bi}")
+          else: print(f)
+          print(f"  peak |I|,|Q| {max(np.abs(x.real).max(), np.abs(x.imag).max()):.0f}  mean |x| {np.abs(x).mean():.0f}")
+          for conj in ([args.conj] if args.conj else [False, True]):
+              bits, soft, amp, sym = demod(x, args.fs, conj=conj)
+              de, frames = find_frames(bits, soft)
+              print(f"  conj={conj}: {len(frames)} SFD hit(s); descrambled ones-fraction {de.mean():.2f}")
+              for fr in frames:
+                  print(f"   {fr['kind']} SFD at symbol {fr['sfd_at']}  SIGNAL=0x{fr['signal']:02x} SERVICE=0x{fr['service']:02x} LENGTH={fr['length_us']} us  CRC {'OK' if fr['crc_ok'] else 'BAD'}  sync soft {fr['sync_soft']:.2f}")
+                  psdu_bits = de[fr["psdu_start"]:]
+                  psdu = bits_to_bytes_lsb(psdu_bits)
+                  print("    " + parse_mac(psdu))
+                  if args.dump: print("    bytes:", bytes(psdu[:64]).hex())
+              if frames: break
 
 if __name__ == "__main__": main()

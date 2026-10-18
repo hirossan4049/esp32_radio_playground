@@ -749,6 +749,119 @@ static void wificnt(uint32_t ms, bool normal_rx)
     say("END WIFICNT\r\n");
 }
 
+/* ---- SDR frame stream ------------------------------------------------------------ */
+/* STREAM2 ctrl_hex nwords decim shift ms
+ * General-purpose capture for the host SDR tools. Duty-cycled like CSTREAM2 (capture -> stop ->
+ * copy -> restart -> process), but every block is emitted as a self-describing frame so the host
+ * can rebuild the exact timeline and detect dropped frames:
+ *   magic "ESPB" | seq u32 | t_us u32 (esp_timer at capture start) | nsamp u16 | fmt u8 | flags u8
+ *   fmt 0: int8 I,Q pairs (box-car decimated by decim, >> shift)   fmt 1: int16 I,Q pairs (decim 1, raw 10-bit)
+ *   flags bit0: the previous frame was truncated (host resyncs on the magic)
+ * USB writes are non-blocking with a short deadline; when the host cannot keep up the rest of the
+ * frame is dropped and the next header says so. Any byte from the host stops the stream. */
+static bool stream2_write(const uint8_t *p, uint32_t n, uint32_t deadline_us)
+{
+    while (n) {
+        int64_t t0 = esp_timer_get_time();
+        while (!usb_serial_jtag_ll_txfifo_writable()) { if (esp_timer_get_time() - t0 > (int64_t)deadline_us) return false; }
+        int w = usb_serial_jtag_ll_write_txfifo(p, n > 64 ? 64 : n);
+        usb_serial_jtag_ll_txfifo_flush();
+        p += w; n -= w;
+    }
+    return true;
+}
+
+static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t shift, uint32_t total_ms)
+{
+    if (nwords < 1024 || nwords > DUMP_BANK_WORDS || decim == 0 || decim > 1024 || (decim > 1 && (decim % 4 || nwords % decim))) { say("ERR STREAM2 args\r\n"); return; }
+    const uint32_t ctrl = (ctrl_in & ~0x3FFFu) | (nwords - 1);
+    const uint32_t nsamp = nwords / decim;
+    const uint32_t fmt = decim == 1 ? 1u : 0u;
+    /* decimated mode: copy the bank, restart the capture at once, then decimate and send while the next block fills
+     * (CSTREAM2 pattern, ~67% coverage). Full-rate mode: convert from the idle bank and send (USB bound). */
+    uint32_t *copy = fmt ? NULL : heap_caps_malloc(nwords * 4, MALLOC_CAP_8BIT | MALLOC_CAP_32BIT);
+    if (!fmt && !copy) { say("ERR STREAM2 malloc copy\r\n"); return; }
+    uint8_t *frame = heap_caps_malloc(fmt ? 16 + nwords * 4 : 16 + 64, MALLOC_CAP_8BIT);
+    if (!frame) { say("ERR STREAM2 malloc frame\r\n"); free(copy); return; }
+    const uint32_t owner0 = rd(SRAM_OWNER);
+    const uint32_t own_run = fmt ? ((owner0 & ~7u) | 2u | own_bit3) : ((owner0 & ~0xFu) | 2u);
+    const volatile uint32_t *bank = fmt ? DUMP_BANK : DUMP_BANK_A;
+    uint32_t seq = 0, sent = 0, truncated = 0, prev_trunc = 0;
+    int64_t t_end = esp_timer_get_time() + (int64_t)total_ms * 1000;
+    say("STREAM2 start ctrl=%08" PRIx32 " nwords=%" PRIu32 " decim=%" PRIu32 " shift=%" PRIu32 " nsamp=%" PRIu32 " fmt=%" PRIu32 " ms=%" PRIu32 " tuned=%" PRIu32 " agc=%08" PRIx32 "\r\n",
+        ctrl, nwords, decim, shift, nsamp, fmt, total_ms, tuned_khz, rd(AGC_FORCE));
+    bool stop = false;
+    /* first capture */
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    wr(SRAM_OWNER, own_run);
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    uint32_t t_us = (uint32_t)esp_timer_get_time();
+    dump_start(ctrl);
+    while (!stop && esp_timer_get_time() < t_end) {
+        bool done = false;
+        for (uint32_t i = 0; i < 4000000; i++) { if (rd(DUMP_CTRL) & (1u << 18)) { done = true; break; } }
+        wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+        __asm__ volatile("fence rw,rw" ::: "memory");
+        wr(SRAM_OWNER, owner0);
+        __asm__ volatile("fence rw,rw" ::: "memory");
+        uint32_t t_blk = t_us;
+        if (!done) {            /* restart and skip */
+            wr(SRAM_OWNER, own_run); __asm__ volatile("fence rw,rw" ::: "memory"); t_us = (uint32_t)esp_timer_get_time(); dump_start(ctrl); continue;
+        }
+        frame[0] = 'E'; frame[1] = 'S'; frame[2] = 'P'; frame[3] = 'B';
+        memcpy(frame + 4, &seq, 4); memcpy(frame + 8, &t_blk, 4);
+        frame[12] = (uint8_t)nsamp; frame[13] = (uint8_t)(nsamp >> 8); frame[14] = (uint8_t)fmt; frame[15] = (uint8_t)prev_trunc;
+        bool ok;
+        if (fmt) {
+            int16_t *o = (int16_t *)(frame + 16);
+            for (uint32_t i = 0; i < nwords; i++) {
+                uint32_t w = bank[i] ^ 0x00080200u;
+                o[2 * i] = (int16_t)((int32_t)(w & 0x3FFu) - 512); o[2 * i + 1] = (int16_t)((int32_t)((w >> 10) & 0x3FFu) - 512);
+            }
+            /* restart before the long USB transfer so the timestamps stay honest (the block is idle anyway) */
+            wr(SRAM_OWNER, own_run); __asm__ volatile("fence rw,rw" ::: "memory"); t_us = (uint32_t)esp_timer_get_time(); dump_start(ctrl);
+            ok = stream2_write(frame, 16 + nwords * 4, 500000u);
+        } else {
+            portDISABLE_INTERRUPTS();
+            { const volatile uint32_t *src = bank; uint32_t *dst = copy;
+              for (uint32_t i = 0; i < nwords; i += 8) {
+                  uint32_t a0 = src[i], a1 = src[i + 1], a2 = src[i + 2], a3 = src[i + 3], a4 = src[i + 4], a5 = src[i + 5], a6 = src[i + 6], a7 = src[i + 7];
+                  dst[i] = a0; dst[i + 1] = a1; dst[i + 2] = a2; dst[i + 3] = a3; dst[i + 4] = a4; dst[i + 5] = a5; dst[i + 6] = a6; dst[i + 7] = a7; } }
+            wr(SRAM_OWNER, own_run); __asm__ volatile("fence rw,rw" ::: "memory"); t_us = (uint32_t)esp_timer_get_time(); dump_start(ctrl);
+            portENABLE_INTERRUPTS();
+            /* header, then decimate into 64-byte chunks that go out while the next block fills */
+            ok = stream2_write(frame, 16, 2000u);
+            uint8_t *o = frame + 16; uint32_t on = 0; const uint32_t *p = copy;
+            for (uint32_t s_ = 0; s_ < nsamp && ok; s_++, p += decim) {
+                uint32_t a = 0, b = 0;
+                for (uint32_t k = 0; k < decim; k += 4) {
+                    uint32_t w0 = p[k] ^ 0x00080200u, w1 = p[k + 1] ^ 0x00080200u, w2 = p[k + 2] ^ 0x00080200u, w3 = p[k + 3] ^ 0x00080200u;
+                    a += (w0 & 0x3FFu) + (w1 & 0x3FFu) + (w2 & 0x3FFu) + (w3 & 0x3FFu);
+                    b += (w0 & 0xFFC00u) + (w1 & 0xFFC00u) + (w2 & 0xFFC00u) + (w3 & 0xFFC00u);
+                }
+                int32_t iv = ((int32_t)a - 512 * (int32_t)decim) >> shift, qv = ((int32_t)(b >> 10) - 512 * (int32_t)decim) >> shift;
+                if (iv > 127) iv = 127;
+                if (iv < -128) iv = -128;
+                if (qv > 127) qv = 127;
+                if (qv < -128) qv = -128;
+                o[on++] = (uint8_t)(int8_t)iv; o[on++] = (uint8_t)(int8_t)qv;
+                if (on == 64) { ok = stream2_write(o, 64, 1500u); on = 0; }
+            }
+            if (ok && on) ok = stream2_write(o, on, 1500u);
+        }
+        if (ok) sent++; else truncated++;
+        prev_trunc = ok ? 0 : 1;
+        seq++;
+        uint8_t c; if (usb_serial_jtag_ll_read_rxfifo(&c, 1)) stop = true;
+    }
+    wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+    __asm__ volatile("fence rw,rw" ::: "memory");
+    wr(SRAM_OWNER, owner0);
+    free(frame); free(copy);
+    esp_rom_delay_us(20000);
+    say("\r\nSTREAM2 end seq=%" PRIu32 " sent=%" PRIu32 " truncated=%" PRIu32 " tuned=%" PRIu32 "\r\nEND\r\n", seq, sent, truncated, tuned_khz);
+}
+
 static bool addr_ok(uint32_t a)
 {
     return (a >= 0x60000000u && a < 0x60100000u) || (a >= 0x3FC80000u && a < 0x3FCE0000u);
@@ -841,6 +954,9 @@ static void handle(char *line)
     } else if (!strcmp(cmd, "WIFICNT")) {
         char *a = strsep(&s, " "); char *b = s;
         wificnt(a ? strtoul(a, NULL, 10) : 2000, b && *b == '1');
+    } else if (!strcmp(cmd, "STREAM2")) {
+        char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = strsep(&s, " "); char *d = strsep(&s, " "); char *e = s;
+        stream2(a ? strtoul(a, NULL, 16) : 0x13fffu, b ? strtoul(b, NULL, 10) : 16384u, c ? strtoul(c, NULL, 10) : 64u, d ? strtoul(d, NULL, 10) : 6u, e ? strtoul(e, NULL, 10) : 2000u);
     } else if (!strcmp(cmd, "OWN")) {
         say("OWN %08" PRIx32 "\r\n", rd(SRAM_OWNER));
     } else {
