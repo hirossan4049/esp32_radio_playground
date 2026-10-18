@@ -3,100 +3,129 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ESP32-C3 SDR Viewer</title>
+<title>ESP32-C3 SDR</title>
 <style>
   :root { --bg:#0f1115; --fg:#e6e6e6; --mut:#9aa3b0; --acc:#4fc3f7; --card:#171a21; --line:#2a2f3a; }
   * { box-sizing:border-box; }
-  body { margin:0; font:14px/1.45 -apple-system, "Hiragino Sans", "Helvetica Neue", sans-serif; background:var(--bg); color:var(--fg); }
-  header { padding:8px 14px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
-  header h1 { font-size:15px; margin:0 8px 0 0; color:var(--acc); }
-  label { color:var(--mut); white-space:nowrap; }
+  body { margin:0; font:13.5px/1.4 -apple-system, "Hiragino Sans", "Helvetica Neue", sans-serif; background:var(--bg); color:var(--fg); user-select:none; }
+  .bar { display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; padding:6px 12px; border-bottom:1px solid var(--line); }
+  label { color:var(--mut); white-space:nowrap; display:inline-flex; align-items:center; gap:4px; }
   input, select, button { background:#22262f; color:var(--fg); border:1px solid #3a4150; border-radius:4px; padding:4px 7px; font-size:13px; }
-  input[type=number] { width:90px; } button { cursor:pointer; } button.primary { background:#1d4e89; border-color:#2b6cb0; } button:disabled { opacity:.45; cursor:default; }
-  main { display:grid; grid-template-columns: minmax(0,1fr) 380px; gap:10px; padding:10px 14px; }
+  input[type=number] { width:74px; } input[type=range] { width:110px; padding:0; } button { cursor:pointer; } button.primary { background:#1d4e89; border-color:#2b6cb0; } button.danger { background:#7a2a2a; } button:disabled { opacity:.4; cursor:default; }
+  button.on { outline:2px solid var(--acc); }
+  main { display:grid; grid-template-columns: minmax(0,1fr) 360px; gap:8px; padding:8px 12px; }
   @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
-  .stack { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .stack { display:flex; flex-direction:column; gap:5px; min-width:0; }
   canvas { width:100%; background:#000; border:1px solid var(--line); display:block; }
-  #bandbar { height:34px; } #spec { height:230px; } #wf { height:360px; } #ov { height:200px; display:none; }
-  .status { display:flex; gap:14px; flex-wrap:wrap; color:var(--mut); font-size:13px; } .status b { color:var(--fg); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:10px; }
-  .card h2 { font-size:13px; margin:0 0 6px; color:var(--mut); font-weight:600; letter-spacing:.02em; }
+  #bandbar { height:30px; } #spec { height:240px; cursor:crosshair; } #wf { height:380px; cursor:crosshair; } #ov { height:170px; display:none; cursor:pointer; }
+  .status { display:flex; gap:12px; flex-wrap:wrap; color:var(--mut); font-size:12.5px; } .status b { color:var(--fg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:9px; }
+  .card h2 { font-size:12.5px; margin:0 0 6px; color:var(--mut); font-weight:600; }
   table { width:100%; border-collapse:collapse; font-size:12.5px; } td, th { padding:3px 4px; text-align:left; vertical-align:top; border-bottom:1px solid #22262f; } th { color:var(--mut); font-weight:500; }
   .sw { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:middle; border:1px solid #556; }
   .k-wifi { background:#4fc3f7; } .k-ble { background:#ff7043; } .k-lte { background:#ba68c8; } .k-tone { background:#ffd54f; } .k-internal { background:#777; } .k-unknown { background:#aaa; }
   #hover { position:fixed; pointer-events:none; background:#1c2230ee; border:1px solid #3a4150; border-radius:4px; padding:5px 8px; font-size:12px; display:none; z-index:5; max-width:320px; }
-  #log { font:11.5px/1.35 ui-monospace, Menlo, monospace; height:90px; overflow:auto; white-space:pre-wrap; color:#bcc; }
+  #log { font:11.5px/1.35 ui-monospace, Menlo, monospace; height:80px; overflow:auto; white-space:pre-wrap; color:#bcc; user-select:text; }
   .warn { color:#ffb74d; } .ok { color:#81c784; } .small { font-size:12px; color:var(--mut); }
-  details summary { cursor:pointer; color:var(--mut); }
+  /* frequency display */
+  .freq { display:flex; align-items:center; gap:8px; }
+  .digits { font:600 30px/1 ui-monospace, Menlo, monospace; letter-spacing:1px; color:#fff; display:inline-flex; align-items:baseline; cursor:ns-resize; }
+  .digits span.d { display:inline-block; padding:2px 1px; border-radius:3px; } .digits span.d:hover { background:#2b3a4a; } .digits span.sep { color:#789; padding:0 2px; }
+  .digits .unit { font-size:14px; color:var(--mut); margin-left:6px; }
+  .steps button { padding:2px 7px; font-size:12px; }
+  kbd { background:#2a2f3a; border-radius:3px; padding:0 4px; font-size:11px; }
 </style>
 </head>
 <body>
-<header>
-  <h1>ESP32-C3 SDR</h1>
+<div class="bar">
   <button id="connect" class="primary">接続</button>
-  <label>見たいもの <select id="preset"></select></label>
-  <label>LO MHz <input id="freq" type="number" value="2437" step="0.001" min="1836" max="2803"></label>
+  <button id="start" disabled>▶ 開始</button><button id="stop" disabled>■ 停止</button>
+  <button id="rec" disabled title="録音: 押している間の I/Q を SigMF で保存">● 録音</button>
+  <button id="scan" disabled title="1842〜2803 MHz を見渡す (約1分)">全帯域スキャン</button>
+  <label>プリセット <select id="preset"></select></label>
   <label>レート <select id="rate">
-    <option value="16000000">16 MS/s 瞬時 (±8 MHz, 1 ms窓)</option>
-    <option value="40000000">40 MS/s 瞬時 (±11 MHz, 0.4 ms窓)</option>
-    <option value="4000000">4 MS/s 連続風 (±2 MHz)</option>
-    <option value="2000000">2 MS/s 連続風 (±1 MHz)</option>
-    <option value="1000000">1 MS/s 連続風 (±0.5 MHz)</option>
-    <option value="250000" selected>250 kS/s 連続風 (±125 kHz, 77%)</option>
+    <option value="16000000">16 MS/s 瞬時 (±8 MHz)</option><option value="40000000">40 MS/s 瞬時 (±11 MHz 実効)</option>
+    <option value="4000000">4 MS/s 連続風 (±2 MHz)</option><option value="2000000">2 MS/s 連続風 (±1 MHz)</option><option value="1000000">1 MS/s 連続風</option><option value="250000" selected>250 kS/s 連続風</option>
   </select></label>
-  <label>ゲイン <input id="gain" type="number" value="30" min="0" max="60"></label>
+  <span id="st" class="small">未接続</span>
+</div>
+<div class="bar">
+  <div class="freq"><div class="digits" id="digits"></div>
+    <span class="steps"><button data-step="-1000000">−1M</button><button data-step="-100000">−100k</button><button data-step="-10000">−10k</button><button data-step="10000">+10k</button><button data-step="100000">+100k</button><button data-step="1000000">+1M</button></span></div>
+  <label>ゲイン <input id="gain" type="range" min="0" max="60" value="30"><span id="gainv">30</span><button id="agc" title="ピークが飽和しない／弱すぎない範囲にゲインを自動調整">自動</button></label>
   <label>閾値 <input id="thr" type="number" value="0" min="0" max="500" title="イベントモード: この平均レベル未満のブロックは送らない (0=全部)"></label>
-  <button id="start" disabled>ライブ開始</button>
-  <button id="stop" disabled>停止</button>
-  <button id="scan" disabled title="1842〜2803 MHz を 10 MHz 刻みで見渡す (約1分)">全帯域スキャン</button>
-</header>
+</div>
+<div class="bar">
+  <label>dB <input id="dbmin" type="number" value="0" step="5" style="width:62px"> 〜 <input id="dbmax" type="number" value="60" step="5" style="width:62px"> <input id="dbauto" type="checkbox" checked> 自動</label>
+  <label>平均 <input id="avgk" type="range" min="0" max="95" value="60"></label>
+  <label><input id="hold" type="checkbox"> ピークホールド</label>
+  <label>ズーム <input id="zoom" type="range" min="1" max="16" value="1"><span id="zoomv">1×</span></label>
+  <label>WF速度 <select id="wfs"><option value="1">1</option><option value="2" selected>2</option><option value="4">4</option><option value="8">8</option></select></label>
+  <label><input id="showbands" type="checkbox" checked> バンド表示</label>
+  <label><input id="rfaxis" type="checkbox" checked> RF軸</label>
+  <span class="small">操作: クリック=同調 / ホイール=±100k (Shift ±1M, Alt ±10k) / <kbd>⌘</kbd>+ホイール=ズーム / ドラッグ=パン / <kbd>←→</kbd> 同調 <kbd>↑↓</kbd> ゲイン <kbd>Space</kbd> 開始停止</span>
+</div>
 <main>
   <div class="stack">
-    <div class="status"><span>状態 <b id="st">未接続</b></span><span>ブロック/s <b id="fps">0</b></span><span>時間カバー率 <b id="duty">–</b></span><span>欠落/切捨て <b id="drops">0 / 0</b></span><span>最強 <b id="peak">–</b></span></div>
     <canvas id="ov" title="クリックで同調"></canvas>
     <canvas id="bandbar"></canvas>
     <canvas id="spec"></canvas>
     <canvas id="wf"></canvas>
-    <div class="small" id="warn"></div>
+    <div class="status"><span>ブロック/s <b id="fps">0</b></span><span>時間カバー率 <b id="duty">–</b></span><span>欠落/切捨て <b id="drops">0 / 0</b></span><span>ピーク <b id="peak">–</b></span><span>録音 <b id="recst">–</b></span><span id="warn" class="warn"></span></div>
   </div>
   <div class="stack">
-    <div class="card"><h2>いま見えている信号（直近 5 秒）</h2><table id="dets"><thead><tr><th>種類</th><th>RF (MHz)</th><th>強さ</th><th>出現</th></tr></thead><tbody></tbody></table><div class="small" id="detnote">ライブ開始後に表示されます。</div></div>
-    <div class="card" id="blecard"><h2>BLE 広告パケット（その場で復号）</h2><table id="ble"><thead><tr><th>AdvA</th><th>種類</th><th>回数</th><th>内容</th></tr></thead><tbody></tbody></table><div class="small" id="blenote">LO を 2402 / 2426 / 2480 MHz、レートを 4 MS/s か 2 MS/s にすると復号します（閾値 45 推奨）。</div></div>
-    <div class="card"><h2>読み方</h2>
-      <div class="small">
-        <div><span class="sw k-wifi"></span>Wi-Fi: 約 20 MHz 幅のバースト（ビーコンは 0.1 秒周期）</div>
-        <div><span class="sw k-ble"></span>BLE / Zigbee: 1〜2 MHz 幅の短いバースト。濃い橙は BLE 広告チャネル</div>
-        <div><span class="sw k-lte"></span>LTE 下り: 広帯域で途切れない。上り(1920〜1980)は端末の間欠送信</div>
-        <div><span class="sw k-tone"></span>トーン: 細い線。LO−3/−7/−11 MHz や DC は ESP32 内部由来（灰色で表示）</div>
-        <div>ウォーターフォールの暗い横線は「取得していない時間」。この装置は 1.024 ms ごとに取得し、間に隙間があります。</div>
-        <div>表示は RF 周波数（LO−RF を反転済み）。16 MS/s 系は ±8 MHz の外側が折り返して見えることがあります。</div>
-      </div>
-    </div>
-    <div class="card"><details open><summary>ログ</summary><div id="log"></div></details></div>
+    <div class="card"><h2>いま見えている信号（直近 5 秒）</h2><table id="dets"><thead><tr><th>種類</th><th>RF (MHz)</th><th>強さ</th><th>出現</th></tr></thead><tbody></tbody></table><div class="small" id="detnote">開始後に表示されます。行をクリックで同調。</div></div>
+    <div class="card"><h2>BLE 広告パケット（その場で復号）</h2><table id="ble"><thead><tr><th>AdvA</th><th>種類</th><th>回数</th><th>内容</th></tr></thead><tbody></tbody></table><div class="small" id="blenote">LO 2402/2426/2480 MHz・4 MS/s・閾値 45 で復号します（プリセット参照）。</div></div>
+    <div class="card"><h2>読み方</h2><div class="small">
+      <div><span class="sw k-wifi"></span>Wi-Fi: 約 20 MHz 幅のバースト（ビーコンは 0.1 s 周期）</div>
+      <div><span class="sw k-ble"></span>BLE / Zigbee: 1〜2 MHz 幅の短いバースト。濃い橙は BLE 広告チャネル</div>
+      <div><span class="sw k-lte"></span>LTE 下り: 広帯域で途切れない。上り (1920〜1980) は端末の間欠送信</div>
+      <div><span class="sw k-tone"></span>トーン: 細い線。LO−3/−7/−11 MHz や DC は ESP32 内部由来（灰色）</div>
+      <div>ウォーターフォールの暗い行＝取得していない時間（この装置は 1.024 ms 単位で取得し隙間があります）</div></div></div>
+    <div class="card"><details open><summary class="small">ログ</summary><div id="log"></div></details></div>
   </div>
 </main>
 <div id="hover"></div>
 <script src="dsp.js"></script>
 <script>
 "use strict";
+const $ = id => document.getElementById(id);
 // ---------- device planning ----------
-const PLL_MIN = 2203e6, PLL_MAX = 2803e6;
-function loPlan(hz) { if (hz >= PLL_MIN && hz <= PLL_MAX) return { pllKhz: Math.round(hz / 1e3), alt: false }; const p = hz * 6 / 5; if (p >= PLL_MIN && p <= PLL_MAX) return { pllKhz: Math.round(p / 1e3), alt: true }; throw new Error(`LO ${hz / 1e6} MHz は同調範囲外 (1836〜2803 MHz)`); }
+const PLL_MIN = 2203e6, PLL_MAX = 2803e6, LO_MIN = 1836e6, LO_MAX = 2803e6;
+function loPlan(hz) { if (hz >= PLL_MIN && hz <= PLL_MAX) return { pllKhz: Math.round(hz / 1e3), alt: false }; const p = hz * 6 / 5; if (p >= PLL_MIN && p <= PLL_MAX) return { pllKhz: Math.round(p / 1e3), alt: true }; throw new Error(`LO ${(hz / 1e6).toFixed(3)} MHz は同調範囲外 (1836〜2803 MHz)`); }
 const FULL = { 80000000: 0x03fff, 40000000: 0x0bfff, 16000000: 0x13fff }, SHIFT = { 4: 2, 8: 3, 16: 4, 32: 5, 64: 6, 128: 7, 256: 8 };
 function ratePlan(rate) { if (FULL[rate] !== undefined) return { ctrl: FULL[rate], decim: 1, shift: 0, mode: "snapshot" }; const d = 16000000 / rate; return { ctrl: 0x13fff, decim: d, shift: SHIFT[d], mode: "duty" }; }
+// ---------- settings (persisted) ----------
+const S = { freq: 2437e6, rate: 250000, gain: 30, thr: 0, dbmin: 0, dbmax: 60, dbauto: true, avgk: 60, hold: false, zoom: 1, wfs: 2, showbands: true, rfaxis: true };
+try { Object.assign(S, JSON.parse(localStorage.getItem("esp32sdr") || "{}")); } catch (_) {}
+function save() { try { localStorage.setItem("esp32sdr", JSON.stringify(S)); } catch (_) {} }
+function syncUI() { $("rate").value = S.rate; $("gain").value = S.gain; $("gainv").textContent = S.gain; $("thr").value = S.thr; $("dbmin").value = S.dbmin; $("dbmax").value = S.dbmax; $("dbauto").checked = S.dbauto; $("avgk").value = S.avgk; $("hold").checked = S.hold; $("zoom").value = S.zoom; $("zoomv").textContent = S.zoom + "×"; $("wfs").value = S.wfs; $("showbands").checked = S.showbands; $("rfaxis").checked = S.rfaxis; renderDigits(); }
 // ---------- presets ----------
 const PRESETS = [
-  ["Wi-Fi ch1 (2412)", 2412, 16000000, 30], ["Wi-Fi ch6 (2437)", 2437, 16000000, 30], ["Wi-Fi ch11 (2462)", 2462, 16000000, 30],
-  ["BLE 広告 ch37 (2402) → 復号", 2402, 4000000, 40, 45], ["BLE 広告 ch38 (2426) → 復号", 2426, 4000000, 40, 45], ["BLE 広告 ch39 (2480) → 復号", 2480, 4000000, 40, 45],
-  ["Zigbee ch15 (2425)", 2425, 4000000, 40], ["Zigbee ch20 (2450)", 2450, 4000000, 40], ["Zigbee ch25 (2475)", 2475, 4000000, 40],
-  ["LTE Band 1 下り (2140, 5/6モード)", 2140, 40000000, 40], ["LTE Band 3 下り (1862, 5/6モード)", 1862, 40000000, 40], ["TD-LTE Band 41 (2560)", 2560, 40000000, 40],
-  ["J-DECT コードレス (1900)", 1900, 4000000, 45], ["LTE Band 1 上り 端末 (1950)", 1950, 40000000, 45],
+  ["Wi-Fi ch1 (2412)", 2412e6, 16000000, 30, 0], ["Wi-Fi ch6 (2437)", 2437e6, 16000000, 30, 0], ["Wi-Fi ch11 (2462)", 2462e6, 16000000, 30, 0],
+  ["BLE 広告 ch37 (2402) 復号", 2402e6, 4000000, 40, 45], ["BLE 広告 ch38 (2426) 復号", 2426e6, 4000000, 40, 45], ["BLE 広告 ch39 (2480) 復号", 2480e6, 4000000, 40, 45],
+  ["Zigbee ch15 (2425)", 2425e6, 4000000, 40, 0], ["Zigbee ch20 (2450)", 2450e6, 4000000, 40, 0], ["Zigbee ch25 (2475)", 2475e6, 4000000, 40, 0],
+  ["LTE Band 1 下り (2140)", 2140e6, 40000000, 40, 0], ["LTE Band 3 下り (1862)", 1862e6, 40000000, 40, 0], ["TD-LTE Band 41 (2560)", 2560e6, 40000000, 40, 0],
+  ["J-DECT (1900)", 1900e6, 4000000, 45, 0], ["LTE Band 1 上り 端末 (1950)", 1950e6, 40000000, 45, 0],
 ];
-const presetEl = document.getElementById("preset"); presetEl.innerHTML = '<option value="">(プリセット)</option>' + PRESETS.map((p, i) => `<option value="${i}">${p[0]}</option>`).join("");
-presetEl.onchange = () => { const p = PRESETS[presetEl.value]; if (!p) return; document.getElementById("freq").value = p[1]; document.getElementById("rate").value = p[2]; document.getElementById("gain").value = p[3]; document.getElementById("thr").value = p[4] || 0; if (port && !running) document.getElementById("start").click(); };
+$("preset").innerHTML = '<option value="">(選ぶ)</option>' + PRESETS.map((p, i) => `<option value="${i}">${p[0]}</option>`).join("");
+$("preset").onchange = () => { const p = PRESETS[$("preset").value]; if (!p) return; S.freq = p[1]; S.rate = p[2]; S.gain = p[3]; S.thr = p[4]; syncUI(); save(); if (port) startLive(); };
+// ---------- frequency digits ----------
+function renderDigits() {
+  const khz = Math.round(S.freq / 1e3); const str = String(khz).padStart(7, "0");     // MMMM.kkk
+  const el = $("digits"); el.innerHTML = ""; const n = str.length;
+  for (let i = 0; i < n; i++) { if (i === n - 3) { const s = document.createElement("span"); s.className = "sep"; s.textContent = "."; el.appendChild(s); }
+    const d = document.createElement("span"); d.className = "d"; d.textContent = str[i]; const weight = Math.pow(10, n - 1 - i) * 1e3; d.dataset.w = weight;
+    d.addEventListener("wheel", ev => { ev.preventDefault(); tuneBy((ev.deltaY < 0 ? 1 : -1) * weight); }, { passive: false });
+    d.addEventListener("click", ev => { const r = d.getBoundingClientRect(); tuneBy((ev.clientY < r.top + r.height / 2 ? 1 : -1) * weight); });
+    el.appendChild(d); }
+  const u = document.createElement("span"); u.className = "unit"; u.textContent = "MHz"; el.appendChild(u);
+}
+function tuneTo(hz) { hz = Math.min(LO_MAX, Math.max(LO_MIN, Math.round(hz / 1e3) * 1e3)); S.freq = hz; renderDigits(); save(); if (running) retune(); }
+function tuneBy(d) { tuneTo(S.freq + d); }
+document.querySelectorAll(".steps button").forEach(b => b.onclick = () => tuneBy(parseInt(b.dataset.step)));
 // ---------- serial ----------
 let port, reader, writer, running = false, scanning = false, textBuf = "";
-const $ = id => document.getElementById(id);
 const log = (m, cls) => { const el = $("log"), d = document.createElement("div"); if (cls) d.className = cls; d.textContent = new Date().toLocaleTimeString() + "  " + m; el.appendChild(d); el.scrollTop = el.scrollHeight; };
 const enc = new TextEncoder(), dec = new TextDecoder();
 async function send(line) { await writer.write(enc.encode(line + "\n")); }
@@ -104,33 +133,28 @@ async function cmdWait(line, pattern, ms = 1500) {
   for (let attempt = 0; attempt < 2; attempt++) {
     binMode = false; textBuf = ""; await send(line); const t0 = performance.now();
     while (performance.now() - t0 < ms) { if (textBuf.includes(pattern)) return textBuf; await new Promise(r => setTimeout(r, 15)); }
-    await writer.write(enc.encode("x\n"));            // in case a stream was still running, stop it and retry once
-    await new Promise(r => setTimeout(r, 400));
+    await writer.write(enc.encode("x\n")); await new Promise(r => setTimeout(r, 400));
   }
   throw new Error(`応答なし: ${line}`);
 }
-let pumpAlive = false;
 async function startPump() {
-  // WebSerial reports line conditions (break, framing, parity, buffer overrun) as non-fatal errors that end the current
-  // reader; the port stays open, so take a new reader and keep going. Only a closed port ends the loop.
   (async () => {
-    pumpAlive = true;
     while (port && port.readable) {
       reader = port.readable.getReader();
       try { for (;;) { const { value, done } = await reader.read(); if (done) break; if (value) onBytes(value); } }
-      catch (e) { log("受信エラー (継続します): " + e.message, "warn"); }
+      catch (e) { log("受信エラー (継続): " + e.message, "warn"); }
       finally { try { reader.releaseLock(); } catch (_) {} }
       await new Promise(r => setTimeout(r, 20));
     }
-    pumpAlive = false; log("シリアルポートが閉じました。再接続してください。", "warn"); $("st").textContent = "切断";
+    log("シリアルポートが閉じました。再接続してください。", "warn"); $("st").textContent = "切断";
   })();
 }
 $("connect").onclick = async () => {
   if (!("serial" in navigator)) { log("このブラウザは WebSerial 非対応です。Chrome / Edge で開いてください。", "warn"); return; }
   try { port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x303a }] }); await port.open({ baudRate: 115200 }); writer = port.writable.getWriter(); await startPump();
-    await writer.write(enc.encode("x\n")); await new Promise(r => setTimeout(r, 600)); textBuf = "";   // stop a stream left running by a previous page
-    const rep = await cmdWait("INFO", "RXPROBE"); log(rep.trim().split("\n").filter(l => l.startsWith("RXPROBE"))[0].slice(0, 60), "ok");
-    $("st").textContent = "接続済み"; $("start").disabled = false; $("scan").disabled = false; }
+    await writer.write(enc.encode("x\n")); await new Promise(r => setTimeout(r, 600)); textBuf = "";
+    const rep = await cmdWait("INFO", "RXPROBE"); log("接続: " + rep.trim().split("\n").filter(l => l.startsWith("RXPROBE"))[0].slice(10, 40), "ok");
+    $("st").textContent = "接続済み"; for (const id of ["start", "scan", "rec"]) $(id).disabled = false; }
   catch (e) { log("接続失敗: " + e.message, "warn"); }
 };
 async function setupRadio(loHz, gain) {
@@ -140,7 +164,7 @@ async function setupRadio(loHz, gain) {
   await cmdWait(`GAIN ${gain}`, "OK GAIN"); await cmdWait("WR 60033d90 000c2040", "OK", 800).catch(() => {});
   return plan;
 }
-// ---------- frame parser ----------
+// ---------- frame parser ("ESPW": 19-byte 7-bit header, uint8 offset-binary payload, no 0xFF anywhere) ----------
 let bin = new Uint8Array(0), binMode = false, frames = 0, drops = 0, trunc = 0, lastT = null, tHist = [], fpsT = performance.now(), fpsN = 0, onEnd = null, frameSink = null;
 function onBytes(chunk) {
   if (!binMode) { textBuf += dec.decode(chunk); if (textBuf.length > 20000) textBuf = textBuf.slice(-10000); return; }
@@ -151,7 +175,7 @@ function onBytes(chunk) {
     if (k > 0) { const s = dec.decode(bin.slice(0, k)); const e = s.indexOf("STREAM2 end"); if (e >= 0) endOfStream(s.slice(e).split("\n")[0]); else if (frames && !s.includes("STREAM2 start")) drops++; bin = bin.slice(k); }
     if (bin.length < 19) return;
     const u7 = (o, n) => { let v = 0; for (let i = 0; i < n; i++) v += (bin[o + i] & 0x7f) * Math.pow(2, 7 * i); return v; };
-    const seq = u7(4, 5), tus = u7(9, 5), nsamp = u7(14, 3), fmt = bin[17], flags = bin[18]; const plen = nsamp * 2;   // web format: always 2 bytes per sample
+    const seq = u7(4, 5), tus = u7(9, 5), nsamp = u7(14, 3), fmt = bin[17], flags = bin[18], plen = nsamp * 2;
     if (bin.length < 19 + plen) return;
     const nx = bin.slice(19 + plen, 19 + plen + 4);
     if (nx.length === 4 && !(nx[0] === 69 && nx[1] === 83 && nx[2] === 80 && nx[3] === 87) && !(nx[0] === 13 && nx[1] === 10)) { drops++; bin = bin.slice(4); continue; }
@@ -159,26 +183,24 @@ function onBytes(chunk) {
     if (frameSink) frameSink(seq, tus, nsamp, fmt, flags, bin.slice(19, 19 + plen)); bin = bin.slice(19 + plen);
   }
 }
-function indexOfMagic(a) { for (let i = 0; i + 3 < a.length; i++) if (a[i] === 69 && a[i + 1] === 83 && a[i + 2] === 80 && a[i + 3] === 87) return i; return -1; }   // "ESPW"
+function indexOfMagic(a) { for (let i = 0; i + 3 < a.length; i++) if (a[i] === 69 && a[i + 1] === 83 && a[i + 2] === 80 && a[i + 3] === 87) return i; return -1; }
 function endOfStream(line) { binMode = false; if (onEnd) { const f = onEnd; onEnd = null; f(line); } }
-async function stopStream() {
-  if (!binMode) return;
-  let ended = false; const prev = onEnd; onEnd = () => { ended = true; if (prev) prev(); };
-  await writer.write(enc.encode("x"));
-  const t0 = performance.now(); while (!ended && performance.now() - t0 < 1500) await new Promise(r => setTimeout(r, 30));
-  binMode = false; onEnd = null;
-}
-// ---------- live view state ----------
-let fs = 250000, lo = 2437e6, nfft = 1024, re, im, win, avg = null, hold = null, vmin = 0, vmax = 60, bleChannel = null;
+async function stopStream() { if (!binMode) return; let ended = false; const prev = onEnd; onEnd = () => { ended = true; if (prev) prev(); }; await writer.write(enc.encode("x")); const t0 = performance.now(); while (!ended && performance.now() - t0 < 1500) await new Promise(r => setTimeout(r, 30)); binMode = false; onEnd = null; }
+// ---------- view state ----------
+let fs = 250000, lo = 2437e6, nfft = 1024, re, im, win, avg = null, hold = null, vmin = 0, vmax = 60, bleChannel = null, viewOff = 0, floorTracker = null, wfRowCount = 0;
 const spec = $("spec"), wf = $("wf"), bandbar = $("bandbar"), ov = $("ov");
 const ctx = { spec: spec.getContext("2d"), wf: wf.getContext("2d"), band: bandbar.getContext("2d"), ov: ov.getContext("2d") };
 function fit(c) { c.width = Math.round(c.clientWidth * devicePixelRatio); c.height = Math.round(c.clientHeight * devicePixelRatio); }
 function setupCanvases() { for (const c of [spec, wf, bandbar, ov]) fit(c); ctx.wf.fillStyle = "#000"; ctx.wf.fillRect(0, 0, wf.width, wf.height); drawBandBar(); }
-const rfMin = () => (lo - fs / 2) / 1e6, rfMax = () => (lo + fs / 2) / 1e6;         // displayed RF span (RF = LO - baseband, so mirrored)
+// displayed RF range: centre lo + viewOff (baseband, mirrored), span fs/zoom
+const span = () => fs / S.zoom; const rfMin = () => (lo - viewOff - span() / 2) / 1e6, rfMax = () => (lo - viewOff + span() / 2) / 1e6;
 function xOfRf(rf, W) { return (rf - rfMin()) / (rfMax() - rfMin()) * W; }
-function niceStep(span, px) { const target = span / Math.max(3, px / 90); const p = Math.pow(10, Math.floor(Math.log10(target))); for (const m of [1, 2, 5, 10]) if (m * p >= target) return m * p; return 10 * p; }
-function drawBandBar(rfLo = rfMin(), rfHi = rfMax(), c = ctx.band, cv = bandbar) {
-  const W = cv.width, H = cv.height; c.fillStyle = "#101318"; c.fillRect(0, 0, W, H); c.font = `${10.5 * devicePixelRatio}px sans-serif`;
+function rfOfX(x, W) { return rfMin() + x / W * (rfMax() - rfMin()); }
+function binOfRf(rf) { const bb = (lo / 1e6 - rf) * 1e6; return Math.max(0, Math.min(nfft - 1, Math.round((bb / fs + 0.5) * nfft))); }
+function niceStep(spanMHz, px) { const target = spanMHz / Math.max(3, px / 90); const p = Math.pow(10, Math.floor(Math.log10(target))); for (const m of [1, 2, 5, 10]) if (m * p >= target) return m * p; return 10 * p; }
+function drawBandBar() {
+  const c = ctx.band, W = bandbar.width, H = bandbar.height, rfLo = rfMin(), rfHi = rfMax(); c.fillStyle = "#101318"; c.fillRect(0, 0, W, H);
+  if (!S.showbands) return; c.font = `${10.5 * devicePixelRatio}px sans-serif`;
   const rows = [["wifi"], ["ble_adv", "ble", "zigbee"], ["lte", "lte_ul", "lte_td", "dect"]]; const rh = H / rows.length;
   rows.forEach((kinds, r) => { for (const b of DSP.BANDS.filter(b => kinds.includes(b.kind))) { const a = b.f0 - b.bw / 2, z = b.f0 + b.bw / 2; if (z < rfLo || a > rfHi) continue;
     const x0 = Math.max(0, (a - rfLo) / (rfHi - rfLo) * W), x1 = Math.min(W, (z - rfLo) / (rfHi - rfLo) * W); c.fillStyle = DSP.KIND_COLOR[b.kind]; c.fillRect(x0, r * rh + 1, Math.max(1, x1 - x0), rh - 2);
@@ -186,84 +208,142 @@ function drawBandBar(rfLo = rfMin(), rfHi = rfMax(), c = ctx.band, cv = bandbar)
 }
 function drawSpec(db) {
   const W = spec.width, H = spec.height, c = ctx.spec; c.fillStyle = "#000"; c.fillRect(0, 0, W, H);
-  if (!avg) { avg = Float32Array.from(db); hold = Float32Array.from(db); } else for (let i = 0; i < nfft; i++) { avg[i] = 0.75 * avg[i] + 0.25 * db[i]; hold[i] = Math.max(hold[i] - 0.3, db[i]); }
-  let lo_ = Infinity, hi_ = -Infinity; for (const v of avg) { if (v < lo_) lo_ = v; if (v > hi_) hi_ = v; } vmin = 0.9 * vmin + 0.1 * (lo_ - 3); vmax = 0.9 * vmax + 0.1 * (Math.max(hi_, lo_ + 25) + 6);
-  // band shading behind the trace
-  for (const b of DSP.BANDS) { if (b.kind === "ism") continue; const x0 = xOfRf(b.f0 - b.bw / 2, W), x1 = xOfRf(b.f0 + b.bw / 2, W); if (x1 < 0 || x0 > W) continue; c.fillStyle = DSP.KIND_COLOR[b.kind]; c.fillRect(Math.max(0, x0), 0, Math.min(W, x1) - Math.max(0, x0), H); }
-  // grid
+  const a = S.avgk / 100; if (!avg) { avg = Float32Array.from(db); hold = Float32Array.from(db); } else for (let i = 0; i < nfft; i++) { avg[i] = a * avg[i] + (1 - a) * db[i]; hold[i] = Math.max(hold[i] - 0.2, db[i]); }
+  if (S.dbauto) { let lo_ = Infinity, hi_ = -Infinity; const i0 = binOfRf(rfMax()), i1 = binOfRf(rfMin()); for (let i = Math.min(i0, i1); i <= Math.max(i0, i1); i++) { if (avg[i] < lo_) lo_ = avg[i]; if (avg[i] > hi_) hi_ = avg[i]; } vmin = 0.9 * vmin + 0.1 * (lo_ - 3); vmax = 0.9 * vmax + 0.1 * (Math.max(hi_, lo_ + 25) + 6); $("dbmin").value = Math.round(vmin); $("dbmax").value = Math.round(vmax); }
+  else { vmin = S.dbmin; vmax = S.dbmax; }
+  if (S.showbands) for (const b of DSP.BANDS) { if (b.kind === "ism") continue; const x0 = xOfRf(b.f0 - b.bw / 2, W), x1 = xOfRf(b.f0 + b.bw / 2, W); if (x1 < 0 || x0 > W) continue; c.fillStyle = DSP.KIND_COLOR[b.kind]; c.fillRect(Math.max(0, x0), 0, Math.min(W, x1) - Math.max(0, x0), H); }
   c.strokeStyle = "#222a36"; c.fillStyle = "#8a93a0"; c.font = `${10.5 * devicePixelRatio}px sans-serif`; c.lineWidth = devicePixelRatio;
-  for (let v = Math.ceil(vmin / 10) * 10; v < vmax; v += 10) { const y = H - (v - vmin) / (vmax - vmin) * H; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); c.fillText(v.toFixed(0) + " dB", 4 * devicePixelRatio, y - 2); }
-  const step = niceStep(rfMax() - rfMin(), W / devicePixelRatio); for (let f = Math.ceil(rfMin() / step) * step; f <= rfMax(); f += step) { const x = xOfRf(f, W); c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); c.fillText(f.toFixed(step < 1 ? 3 : 0), x + 3, H - 5 * devicePixelRatio); }
-  // traces: hold (dim) and average
-  const trace = (arr, color, lw) => { c.strokeStyle = color; c.lineWidth = lw * devicePixelRatio; c.beginPath(); for (let px = 0; px < W; px++) { const rf = rfMin() + (px / W) * (rfMax() - rfMin()); const bb = (lo / 1e6 - rf) * 1e6; const i = Math.max(0, Math.min(nfft - 1, Math.round((bb / fs + 0.5) * nfft))); const y = H - (arr[i] - vmin) / (vmax - vmin) * H; px ? c.lineTo(px, y) : c.moveTo(px, y); } c.stroke(); };
-  trace(hold, "#3a4a5a", 1); trace(avg, "#4fc3f7", 1.4);
-  c.fillStyle = "#aab"; c.fillText(`RF MHz   LO ${(lo / 1e6).toFixed(3)}   ${(fs / 1e6).toLocaleString()} MS/s`, W - 230 * devicePixelRatio, 14 * devicePixelRatio);
+  for (let v = Math.ceil(vmin / 10) * 10; v < vmax; v += 10) { const y = H - (v - vmin) / (vmax - vmin) * H; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); c.fillText(v.toFixed(0), 4 * devicePixelRatio, y - 2); }
+  const step = niceStep(rfMax() - rfMin(), W / devicePixelRatio);
+  for (let f = Math.ceil(rfMin() / step) * step; f <= rfMax(); f += step) { const x = xOfRf(f, W); c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); const label = S.rfaxis ? f.toFixed(step < 1 ? (step < 0.01 ? 3 : 2) : 0) : ((lo / 1e6 - f)).toFixed(step < 1 ? 3 : 1); c.fillText(label, x + 3, H - 5 * devicePixelRatio); }
+  const trace = (arr, color, lw) => { c.strokeStyle = color; c.lineWidth = lw * devicePixelRatio; c.beginPath(); for (let px = 0; px < W; px++) { const i = binOfRf(rfOfX(px, W)); const y = H - (arr[i] - vmin) / (vmax - vmin) * H; px ? c.lineTo(px, y) : c.moveTo(px, y); } c.stroke(); };
+  if (S.hold) trace(hold, "#5a6a7a", 1); trace(avg, "#4fc3f7", 1.4);
+  // centre (LO) marker
+  const xc = xOfRf(lo / 1e6, W); c.strokeStyle = "#ffffff55"; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(xc, 0); c.lineTo(xc, H); c.stroke(); c.setLineDash([]);
+  c.fillStyle = "#aab"; c.fillText(`${S.rfaxis ? "RF MHz" : "LO−RF MHz"}  LO ${(lo / 1e6).toFixed(3)}  ${(fs / 1e6).toLocaleString()} MS/s  ${S.zoom}×`, W - 300 * devicePixelRatio, 14 * devicePixelRatio);
   let pk = 0; for (let i = 1; i < nfft; i++) if (avg[i] > avg[pk]) pk = i; const rfPk = lo / 1e6 - (pk / nfft - 0.5) * fs / 1e6; const names = DSP.bandsAt(rfPk).filter(b => b.kind !== "ism").map(b => b.name).slice(0, 2).join(", ");
-  $("peak").textContent = `${rfPk.toFixed(4)} MHz (${(avg[pk] - DSP.median(avg)).toFixed(0)} dB 床上)${names ? " " + names : ""}`;
+  $("peak").textContent = `${rfPk.toFixed(4)} MHz (+${(avg[pk] - DSP.median(avg)).toFixed(0)} dB)${names ? " " + names : ""}`;
 }
 function drawWfRow(db, gapRows) {
+  if (++wfRowCount % S.wfs) return;
   const W = wf.width, H = wf.height, c = ctx.wf, rows = 1 + gapRows, rh = Math.max(1, Math.round(devicePixelRatio));
   c.drawImage(wf, 0, 0, W, H - rows * rh, 0, rows * rh, W, H - rows * rh);
   if (gapRows) { c.fillStyle = "#1a1a1a"; c.fillRect(0, rh, W, gapRows * rh); }
   const img = c.createImageData(W, rh);
-  for (let x = 0; x < W; x++) { const rf = rfMin() + (x / W) * (rfMax() - rfMin()); const bb = (lo / 1e6 - rf) * 1e6; const i = Math.max(0, Math.min(nfft - 1, Math.round((bb / fs + 0.5) * nfft))); const t = Math.max(0, Math.min(1, (db[i] - vmin) / (vmax - vmin)));
+  for (let x = 0; x < W; x++) { const i = binOfRf(rfOfX(x, W)); const t = Math.max(0, Math.min(1, (db[i] - vmin) / (vmax - vmin)));
     const r = Math.round(255 * Math.min(1, Math.max(0, 2.2 * t - 1))), g = Math.round(255 * Math.min(1, Math.max(0, 2 * t - 0.4))), b = Math.round(255 * Math.min(1, t < 0.5 ? 0.25 + 1.5 * t : 1.75 - 1.5 * t));
     for (let y = 0; y < rh; y++) { const o = 4 * (y * W + x); img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 255; } }
   c.putImageData(img, 0, 0);
 }
-// ---------- detections ----------
-const recent = [];   // {t, items:[{key,label,kind,rfLo,rfHi,peak,conf}]}
-let floorTracker = null;
+// ---------- detections / BLE ----------
+const recent = [];
 function noteDetections(db) {
-  const floor = floorTracker.update(db); const dets = DSP.detect(db, fs, 8, floor); const items = []; const keys = new Set();
-  for (const d of dets) { const cl = DSP.classify(d, lo / 1e6, fs, 1); const key = cl.kind + ":" + (Math.round(cl.rfC * 2) / 2).toFixed(1); if (keys.has(key)) continue; keys.add(key); items.push({ key, label: cl.label, kind: cl.kind, rfLo: cl.rfLo, rfHi: cl.rfHi, peak: d.peakDb, conf: cl.conf }); }
+  const floor = floorTracker.update(db); const items = []; const keys = new Set();
+  for (const d of DSP.detect(db, fs, 8, floor)) { const cl = DSP.classify(d, lo / 1e6, fs, 1); const key = cl.kind + ":" + (Math.round(cl.rfC * 2) / 2).toFixed(1); if (keys.has(key)) continue; keys.add(key); items.push({ key, label: cl.label, kind: cl.kind, rfLo: cl.rfLo, rfHi: cl.rfHi, rfC: cl.rfC, peak: d.peakDb, conf: cl.conf }); }
   const now = performance.now(); recent.push({ t: now, items }); while (recent.length && now - recent[0].t > 5000) recent.shift();
 }
 function renderDetections() {
   const agg = new Map(); const nb = recent.length || 1;
-  for (const r of recent) for (const it of r.items) { const a = agg.get(it.key) || { n: 0, peak: 0, lo: it.rfLo, hi: it.rfHi, label: it.label, kind: it.kind, conf: it.conf }; a.n++; a.peak = Math.max(a.peak, it.peak); a.lo = Math.min(a.lo, it.rfLo); a.hi = Math.max(a.hi, it.rfHi); agg.set(it.key, a); }
-  const rows = [...agg.values()].map(a => { const persist = a.n / nb; const label = a.label + (a.kind === "wifi" || a.kind === "lte" || a.kind === "unknown" ? (persist > 0.6 ? "・連続 (基地局など)" : persist < 0.3 ? "・間欠バースト (Wi-Fi パケットなど)" : "") : ""); return { ...a, persist, label }; }).sort((x, y) => y.peak - x.peak).slice(0, 12);
-  const tb = $("dets").querySelector("tbody"); tb.innerHTML = rows.map(a => `<tr><td><span class="sw k-${a.kind}"></span>${a.label}<div class="small">${a.conf}</div></td><td>${a.lo.toFixed(2)}〜${a.hi.toFixed(2)}</td><td>+${a.peak.toFixed(0)} dB</td><td>${(100 * a.persist).toFixed(0)}%</td></tr>`).join("");
-  $("detnote").textContent = rows.length ? "出現 = 直近 5 秒のブロックのうち検出された割合。100% 近いものは連続波、数% は間欠バースト。" : "床から 8 dB 以上の信号はまだありません。";
+  for (const r of recent) for (const it of r.items) { const a = agg.get(it.key) || { n: 0, peak: 0, lo: it.rfLo, hi: it.rfHi, rfC: it.rfC, label: it.label, kind: it.kind, conf: it.conf }; a.n++; a.peak = Math.max(a.peak, it.peak); a.lo = Math.min(a.lo, it.rfLo); a.hi = Math.max(a.hi, it.rfHi); agg.set(it.key, a); }
+  const rows = [...agg.values()].map(a => { const persist = a.n / nb; const label = a.label + (["wifi", "lte", "unknown"].includes(a.kind) ? (persist > 0.6 ? "・連続" : persist < 0.3 ? "・間欠バースト" : "") : ""); return { ...a, persist, label }; }).sort((x, y) => y.peak - x.peak).slice(0, 12);
+  const tb = $("dets").querySelector("tbody"); tb.innerHTML = rows.map((a, i) => `<tr data-i="${i}" style="cursor:pointer"><td><span class="sw k-${a.kind}"></span>${a.label}<div class="small">${a.conf}</div></td><td>${a.lo.toFixed(2)}〜${a.hi.toFixed(2)}</td><td>+${a.peak.toFixed(0)} dB</td><td>${(100 * a.persist).toFixed(0)}%</td></tr>`).join("");
+  tb.querySelectorAll("tr").forEach(tr => tr.onclick = () => { const a = rows[tr.dataset.i]; if (a.kind !== "internal") tuneTo(a.rfC * 1e6); });
+  $("detnote").textContent = rows.length ? "出現 = 直近 5 秒で検出された割合。100% 近い=連続波、数%=間欠バースト。行をクリックで同調。" : "床から 8 dB 以上の信号はまだありません。";
 }
-// ---------- BLE ----------
 const bleSeen = new Map();
 function noteBle(hits) { for (const h of hits) { if (!h.crcOk) continue; const k = h.adva || "(no AdvA)"; const e = bleSeen.get(k) || { n: 0, types: new Set(), ad: "", last: 0 }; e.n++; e.types.add(h.pduType); e.ad = h.ad || e.ad; e.last = performance.now(); bleSeen.set(k, e); } }
 function renderBle() { const rows = [...bleSeen.entries()].sort((a, b) => b[1].last - a[1].last).slice(0, 15); $("ble").querySelector("tbody").innerHTML = rows.map(([k, e]) => `<tr><td>${k}</td><td>${[...e.types].join(",")}</td><td>${e.n}</td><td class="small">${e.ad}</td></tr>`).join(""); }
+// ---------- recording (SigMF download) ----------
+let recording = false; const recFrames = []; let recBytes = 0, recMeta = null;
+$("rec").onclick = () => { if (!recording) { recFrames.length = 0; recBytes = 0; recording = true; recMeta = { lo, fs, gain: S.gain, t0: Date.now() }; $("rec").classList.add("on"); $("rec").textContent = "■ 録音停止"; } else { recording = false; $("rec").classList.remove("on"); $("rec").textContent = "● 録音"; downloadRecording(); } };
+function downloadRecording() {
+  if (!recFrames.length) { log("録音データがありません（開始中に録音してください）", "warn"); return; }
+  const total = recFrames.reduce((s, f) => s + f.payload.length, 0); const data = new Int8Array(total); let off = 0; const caps = [];
+  for (const f of recFrames) { caps.push({ "core:sample_start": off / 2, "core:frequency": recMeta.lo, "esp32c3:t_us": f.tus, "esp32c3:seq": f.seq, "esp32c3:block_samples": f.payload.length / 2 }); for (let i = 0; i < f.payload.length; i++) data[off + i] = f.payload[i] - 128; off += f.payload.length; }
+  const meta = { global: { "core:datatype": "ci8", "core:sample_rate": recMeta.fs, "core:version": "1.2.0", "core:hw": "ESP32-C3 RF dump engine (web viewer)", "core:recorder": "esp32sdr.html", "core:description": `LO ${recMeta.lo / 1e6} MHz gain ${recMeta.gain}`, "esp32c3:gain_index": recMeta.gain, "esp32c3:iq_convention": "I+jQ = LO - RF", "esp32c3:gaps": "blocks are not contiguous; see captures[] timestamps", "esp32c3:format_note": recMeta.fs >= 16e6 ? "snapshot: 10-bit >> 2 (8-bit)" : "duty int8" }, captures: caps, annotations: [] };
+  const name = `esp32sdr_${Math.round(recMeta.lo / 1e3)}kHz_${new Date(recMeta.t0).toISOString().replace(/[:.]/g, "-")}`;
+  const dl = (blob, fn) => { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fn; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); };
+  dl(new Blob([data.buffer]), name + ".sigmf-data"); setTimeout(() => dl(new Blob([JSON.stringify(meta, null, 1)], { type: "application/json" }), name + ".sigmf-meta"), 300);
+  log(`録音を保存: ${name} (${caps.length} ブロック, ${(total / 1e6).toFixed(1)} MB)`, "ok"); $("recst").textContent = "–";
+}
 // ---------- live ----------
-let renderTimer = null;
+let renderTimer = null, agcOn = false;
 function onLiveFrame(seq, tus, nsamp, fmt, flags, payload) {
   frames++; fpsN++; const now = performance.now(); if (now - fpsT > 1000) { $("fps").textContent = (fpsN * 1000 / (now - fpsT)).toFixed(1); fpsN = 0; fpsT = now; }
-  let gapRows = 0; const blockUs = 16384 / 16e6 * 1e6 * (fs >= 16e6 ? 16e6 / fs : 1);
+  let gapRows = 0; const blockUs = 1024 * (fs >= 16e6 ? 16e6 / fs : 1);
   if (lastT !== null) { const dt = (tus - lastT) >>> 0; tHist.push(dt); if (tHist.length > 100) tHist.shift(); gapRows = Math.min(5, Math.max(0, Math.round((dt - blockUs) / blockUs))); const med = tHist.slice().sort((a, b) => a - b)[tHist.length >> 1]; $("duty").textContent = (100 * Math.min(1, blockUs / med)).toFixed(0) + "% (" + (med / 1000).toFixed(2) + " ms 毎)"; }
   lastT = tus; $("drops").textContent = `${drops} / ${trunc}`;
-  if (!nsamp) { recent.push({ t: now, items: [] }); return; }   // skipped (event mode) blocks count as "nothing seen"
+  if (!nsamp) { recent.push({ t: now, items: [] }); return; }
+  if (recording) { if (recBytes < 300e6) { recFrames.push({ seq, tus, payload: Uint8Array.from(payload) }); recBytes += payload.length; $("recst").textContent = `${(recBytes / 1e6).toFixed(1)} MB`; } else $("recst").textContent = "上限 300 MB"; }
   const { I, Q } = DSP.unpackWeb(payload); const db = DSP.psd(I, Q, nfft, win, re, im); drawSpec(db); drawWfRow(db, gapRows); noteDetections(db);
   if (bleChannel && (fs === 4e6 || fs === 2e6)) noteBle(DSP.bleDecode(I, Q, fs, bleChannel));
+  if (agcOn) agcStep(I, Q);
 }
-$("start").onclick = async () => {
+let agcLast = 0;
+function agcStep(I, Q) {   // keep the peak sample between -12 and -3 dBFS of the 8-bit range (127)
+  const now = performance.now(); if (now - agcLast < 400) return; agcLast = now;
+  let pk = 0; for (let i = 0; i < I.length; i += 4) { const v = Math.max(Math.abs(I[i]), Math.abs(Q[i])); if (v > pk) pk = v; }
+  const fsr = fs >= 16e6 ? 127 : 127; let g = S.gain;
+  if (pk > fsr * 0.7) g -= 3; else if (pk < fsr * 0.25) g += 2; else return;
+  g = Math.max(0, Math.min(60, g)); if (g !== S.gain) { S.gain = g; $("gain").value = g; $("gainv").textContent = g; save(); queueGain(); }
+}
+let gainTimer = null; function queueGain() { clearTimeout(gainTimer); gainTimer = setTimeout(async () => { if (!running) return; await restart(); }, 250); }
+async function startLive() {
   try { if (scanning) return; await stopStream();
-    lo = Math.round(parseFloat($("freq").value) * 1e6); const rate = parseInt($("rate").value), gain = parseInt($("gain").value), thr = parseInt($("thr").value) || 0; fs = rate;
+    lo = S.freq; fs = S.rate; const rp = ratePlan(fs); const thr = S.thr | 0;
     nfft = fs >= 16e6 ? 1024 : fs >= 2e6 ? 512 : 256; re = new Float32Array(nfft); im = new Float32Array(nfft); win = Float32Array.from({ length: nfft }, (_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (nfft - 1)));
-    avg = hold = null; frames = drops = trunc = 0; lastT = null; tHist = []; recent.length = 0; bleSeen.clear(); floorTracker = DSP.makeFloor(nfft); vmin = 0; vmax = 60; ov.style.display = "none"; setupCanvases();
-    const rp = ratePlan(rate); const plan = await setupRadio(lo, gain);
+    avg = hold = null; frames = drops = trunc = 0; lastT = null; tHist = []; recent.length = 0; bleSeen.clear(); floorTracker = DSP.makeFloor(nfft); viewOff = 0; vmin = S.dbmin; vmax = S.dbmax; ov.style.display = "none"; setupCanvases();
+    const plan = await setupRadio(lo, S.gain);
     bleChannel = { 2402: 37, 2426: 38, 2480: 39 }[Math.round(lo / 1e6)] || null;
-    $("warn").textContent = [rp.ctrl === 0x13fff ? "16 MS/s 系: ±8 MHz の外 (8〜11 MHz) が折り返して見えることがあります。" : "", plan.alt ? `5/6 モード (PLL ${(plan.pllKhz / 1e3).toFixed(3)} MHz)。この領域は内部スプリアスが多めです。` : "", bleChannel ? (fs <= 4e6 ? "BLE 広告チャネル: 復号を有効化。" : "BLE を復号するにはレートを 4 MS/s にしてください。") : ""].join(" ");
-    log(`ライブ: LO ${lo / 1e6} MHz (${plan.alt ? "5/6" : "直接"}), ${rate} S/s, ゲイン ${gain}, 閾値 ${thr}`);
+    $("warn").textContent = [rp.ctrl === 0x13fff ? "16 MS/s 系: ±8 MHz の外側が折り返して見えることがあります。" : "", plan.alt ? `5/6 モード (PLL ${(plan.pllKhz / 1e3).toFixed(3)} MHz)。内部スプリアス多め。` : "", bleChannel ? (fs <= 4e6 ? "BLE 復号: 有効" : "BLE 復号にはレート 4 MS/s にしてください") : ""].join(" ");
+    log(`開始: LO ${(lo / 1e6).toFixed(3)} MHz (${plan.alt ? "5/6" : "直接"}), ${fs} S/s, ゲイン ${S.gain}, 閾値 ${thr}`);
     bin = new Uint8Array(0); frameSink = onLiveFrame; onEnd = () => finish("ストリーム終了"); binMode = true; running = true;
     await send(`STREAM2 ${rp.ctrl.toString(16)} 16384 ${rp.decim} ${rp.shift} 1800000 ${thr} 1`);
     $("start").disabled = true; $("stop").disabled = false; $("scan").disabled = true; $("st").textContent = "受信中";
-    renderTimer = setInterval(() => { renderDetections(); renderBle(); }, 700);
+    clearInterval(renderTimer); renderTimer = setInterval(() => { renderDetections(); renderBle(); }, 700);
   } catch (e) { log("開始失敗: " + e.message, "warn"); binMode = false; }
-};
+}
+async function restart() { if (!running) return; const keep = { avg, hold, recent: recent.slice(), ble: new Map(bleSeen) }; await stopStream(); running = false; await startLive(); if (lo === keep.avg && false) {} Object.assign(bleSeen, keep.ble); }
+let retuneTimer = null; function retune() { clearTimeout(retuneTimer); retuneTimer = setTimeout(restart, 250); }
+$("start").onclick = startLive;
 function finish(msg) { binMode = false; running = false; clearInterval(renderTimer); $("start").disabled = false; $("stop").disabled = true; $("scan").disabled = false; $("st").textContent = "接続済み"; if (msg) log(msg); }
 $("stop").onclick = async () => { onEnd = null; await stopStream(); finish("停止"); };
+// ---------- controls wiring ----------
+$("rate").onchange = () => { S.rate = parseInt($("rate").value); save(); if (running) retune(); };
+$("gain").oninput = () => { S.gain = parseInt($("gain").value); $("gainv").textContent = S.gain; save(); if (running) queueGain(); };
+$("agc").onclick = () => { agcOn = !agcOn; $("agc").classList.toggle("on", agcOn); log(agcOn ? "自動ゲイン: 有効" : "自動ゲイン: 無効"); };
+$("thr").onchange = () => { S.thr = parseInt($("thr").value) || 0; save(); if (running) retune(); };
+$("dbmin").onchange = $("dbmax").onchange = () => { S.dbmin = parseFloat($("dbmin").value); S.dbmax = parseFloat($("dbmax").value); S.dbauto = false; $("dbauto").checked = false; save(); };
+$("dbauto").onchange = () => { S.dbauto = $("dbauto").checked; save(); };
+$("avgk").oninput = () => { S.avgk = parseInt($("avgk").value); save(); };
+$("hold").onchange = () => { S.hold = $("hold").checked; if (hold && avg) hold.set(avg); save(); };
+$("zoom").oninput = () => { setZoom(parseInt($("zoom").value)); };
+function setZoom(z) { S.zoom = Math.max(1, Math.min(16, z)); $("zoom").value = S.zoom; $("zoomv").textContent = S.zoom + "×"; const half = fs / 2 - span() / 2; viewOff = Math.max(-half, Math.min(half, viewOff)); save(); drawBandBar(); }
+$("wfs").onchange = () => { S.wfs = parseInt($("wfs").value); save(); };
+$("showbands").onchange = () => { S.showbands = $("showbands").checked; save(); drawBandBar(); };
+$("rfaxis").onchange = () => { S.rfaxis = $("rfaxis").checked; save(); };
+// mouse on spectrum / waterfall: click = tune, wheel = tune step, cmd/ctrl+wheel = zoom, drag = pan
+let drag = null;
+for (const cv of [spec, wf]) {
+  cv.addEventListener("wheel", ev => { ev.preventDefault(); if (ev.metaKey || ev.ctrlKey) { setZoom(S.zoom + (ev.deltaY < 0 ? 1 : -1)); return; } const step = ev.shiftKey ? 1e6 : ev.altKey ? 1e4 : 1e5; tuneBy((ev.deltaY < 0 ? 1 : -1) * step); }, { passive: false });
+  cv.addEventListener("mousedown", ev => { drag = { x: ev.clientX, off: viewOff, moved: false }; });
+  cv.addEventListener("mousemove", ev => { if (drag) { const dx = ev.clientX - drag.x; if (Math.abs(dx) > 3) drag.moved = true; const half = fs / 2 - span() / 2; viewOff = Math.max(-half, Math.min(half, drag.off + dx / cv.clientWidth * span())); drawBandBar(); } showHover(ev, cv); });
+  cv.addEventListener("mouseup", ev => { if (drag && !drag.moved) tuneTo(rfOfX(ev.offsetX * devicePixelRatio, cv.width) * 1e6); drag = null; });
+  cv.addEventListener("mouseleave", () => { drag = null; hover.style.display = "none"; });
+}
+const hover = $("hover");
+function showHover(ev, cv) { if (!avg) return; const rf = rfOfX(ev.offsetX * devicePixelRatio, cv.width); const bb = lo / 1e6 - rf; const names = DSP.bandsAt(rf).map(b => b.name + (b.note ? "（" + b.note + "）" : "")); const internal = DSP.internalAt(bb, lo / 1e6);
+  hover.style.display = "block"; hover.style.left = (ev.clientX + 14) + "px"; hover.style.top = (ev.clientY + 14) + "px";
+  hover.innerHTML = `<b>${rf.toFixed(4)} MHz</b> (LO${bb >= 0 ? "−" : "+"}${Math.abs(bb).toFixed(3)})  ${avg[binOfRf(rf)].toFixed(1)} dB<br>${names.length ? names.join("<br>") : "既知バンド外"}${internal ? "<br><span class='warn'>ESP32 内部: " + internal + "</span>" : ""}<br><span class='small'>クリックで同調</span>`; }
+document.addEventListener("keydown", ev => { if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if (ev.key === "ArrowLeft") tuneBy(-(ev.shiftKey ? 1e6 : 1e5)); else if (ev.key === "ArrowRight") tuneBy(ev.shiftKey ? 1e6 : 1e5);
+  else if (ev.key === "ArrowUp") { $("gain").value = Math.min(60, S.gain + 1); $("gain").oninput(); } else if (ev.key === "ArrowDown") { $("gain").value = Math.max(0, S.gain - 1); $("gain").oninput(); }
+  else if (ev.key === " ") { ev.preventDefault(); if (!port) return; running ? $("stop").click() : startLive(); } else if (ev.key === "PageUp") setZoom(S.zoom + 1); else if (ev.key === "PageDown") setZoom(S.zoom - 1); else return; ev.preventDefault(); });
 // ---------- overview scan ----------
-let ovData = null;   // {rf:[...MHz 1 MHz bins], db:[...]}
+let ovData = null;
 $("scan").onclick = async () => {
   if (running) return; scanning = true; $("scan").disabled = true; $("start").disabled = true; $("st").textContent = "スキャン中"; ov.style.display = "block"; fit(ov);
-  const gain = parseInt($("gain").value); const step = 10, lo0 = 1842, lo1 = 2803; const bins = new Map();
-  const nf = 1024, r2 = new Float32Array(nf), i2 = new Float32Array(nf), w2 = Float32Array.from({ length: nf }, (_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (nf - 1)));
+  const gain = S.gain, step = 10, lo0 = 1842, lo1 = 2803, bins = new Map(), nf = 1024, r2 = new Float32Array(nf), i2 = new Float32Array(nf), w2 = Float32Array.from({ length: nf }, (_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (nf - 1)));
   try {
     for (let L = lo0; L <= lo1; L += step) {
       try { await setupRadio(L * 1e6, gain); } catch (e) { log(`スキャン ${L} MHz: ${e.message}（飛ばします）`, "warn"); continue; }
@@ -273,13 +353,13 @@ $("scan").onclick = async () => {
       const fl = DSP.median(got); for (let i = 0; i < nf; i++) { const bb = (i / nf - 0.5) * 39.97; if (Math.abs(bb) > 10) continue; const rf = Math.round(L - bb); const v = got[i] - fl; const cur = bins.get(rf); bins.set(rf, cur === undefined ? v : Math.min(cur, v)); }
       drawOverview(bins, L); $("st").textContent = `スキャン中 ${L} MHz`;
     }
-    ovData = bins; drawOverview(bins); log("全帯域スキャン完了。グラフをクリックすると同調します。", "ok");
+    ovData = bins; drawOverview(bins); log("全帯域スキャン完了。概観グラフをクリックすると同調します。", "ok");
   } catch (e) { log("スキャン失敗: " + e.message, "warn"); }
   scanning = false; frameSink = null; onEnd = null; binMode = false; $("scan").disabled = false; $("start").disabled = false; $("st").textContent = "接続済み";
 };
 function drawOverview(bins, progress) {
   const W = ov.width, H = ov.height, c = ctx.ov, lo0 = 1832, lo1 = 2813; c.fillStyle = "#000"; c.fillRect(0, 0, W, H);
-  for (const b of DSP.BANDS) { if (b.kind === "ism" || b.kind === "ble" || b.kind === "zigbee") continue; const x0 = (b.f0 - b.bw / 2 - lo0) / (lo1 - lo0) * W, x1 = (b.f0 + b.bw / 2 - lo0) / (lo1 - lo0) * W; c.fillStyle = DSP.KIND_COLOR[b.kind]; c.fillRect(x0, 0, Math.max(1, x1 - x0), H); }
+  for (const b of DSP.BANDS) { if (["ism", "ble", "zigbee"].includes(b.kind)) continue; const x0 = (b.f0 - b.bw / 2 - lo0) / (lo1 - lo0) * W, x1 = (b.f0 + b.bw / 2 - lo0) / (lo1 - lo0) * W; c.fillStyle = DSP.KIND_COLOR[b.kind]; c.fillRect(x0, 0, Math.max(1, x1 - x0), H); }
   c.font = `${10.5 * devicePixelRatio}px sans-serif`; c.fillStyle = "#cfd8dc";
   for (const b of DSP.BANDS.filter(b => b.kind.startsWith("lte") || b.kind === "dect")) { const x0 = (b.f0 - b.bw / 2 - lo0) / (lo1 - lo0) * W; c.fillText(b.name, x0 + 2, 12 * devicePixelRatio); }
   c.fillText("Wi-Fi / BLE / Zigbee (ISM 2.4 GHz)", (2400 - lo0) / (lo1 - lo0) * W + 2, 12 * devicePixelRatio);
@@ -289,16 +369,10 @@ function drawOverview(bins, progress) {
   c.fillStyle = "#8a93a0"; for (let f = 1850; f <= 2800; f += 50) { const x = (f - lo0) / (lo1 - lo0) * W; c.fillText(f.toString(), x - 10 * devicePixelRatio, H - 3 * devicePixelRatio); }
   if (progress) { c.fillStyle = "#fff"; c.fillRect((progress - lo0) / (lo1 - lo0) * W, 0, devicePixelRatio, H); }
 }
-ov.addEventListener("click", ev => { const rf = 1832 + ev.offsetX / ov.clientWidth * (2813 - 1832); $("freq").value = Math.round(rf); const near = DSP.bandsAt(rf).filter(b => b.kind !== "ism")[0]; if (near && near.kind === "wifi") { $("freq").value = near.f0; $("rate").value = 16000000; } else if (near && near.kind.startsWith("ble")) { $("rate").value = 4000000; } else $("rate").value = 40000000; if (port && !running && !scanning) $("start").click(); });
-// ---------- hover readout ----------
-const hover = $("hover");
-for (const cv of [spec, wf, bandbar]) { cv.addEventListener("mousemove", ev => { if (!avg) return; const rf = rfMin() + ev.offsetX / cv.clientWidth * (rfMax() - rfMin()); const bb = lo / 1e6 - rf; const names = DSP.bandsAt(rf).map(b => b.name + (b.note ? "（" + b.note + "）" : "")); const internal = DSP.internalAt(bb, lo / 1e6);
-    const i = Math.max(0, Math.min(nfft - 1, Math.round((bb * 1e6 / fs + 0.5) * nfft))); hover.style.display = "block"; hover.style.left = (ev.clientX + 14) + "px"; hover.style.top = (ev.clientY + 14) + "px";
-    hover.innerHTML = `<b>${rf.toFixed(4)} MHz</b> (LO${bb >= 0 ? "−" : "+"}${Math.abs(bb).toFixed(3)})  ${avg[i].toFixed(1)} dB<br>${names.length ? names.join("<br>") : "既知バンド外"}${internal ? "<br><span class='warn'>ESP32 内部: " + internal + "</span>" : ""}`; });
-  cv.addEventListener("mouseleave", () => hover.style.display = "none"); }
+ov.addEventListener("click", ev => { const rf = 1832 + ev.offsetX / ov.clientWidth * (2813 - 1832); const near = DSP.bandsAt(rf).filter(b => b.kind !== "ism")[0]; S.freq = Math.round((near && near.kind === "wifi" ? near.f0 : rf) * 1e6); S.rate = near && near.kind === "wifi" ? 16000000 : near && near.kind.startsWith("ble") ? 4000000 : 40000000; syncUI(); save(); if (port && !running && !scanning) startLive(); });
 window.addEventListener("resize", () => { if (!scanning) setupCanvases(); if (ovData) { fit(ov); drawOverview(ovData); } });
 window.addEventListener("beforeunload", () => { try { if (writer) writer.write(enc.encode("x\n")); } catch (_) {} });
-setupCanvases(); log("Chrome / Edge で「接続」→ ESP32-C3 を選択。プリセットから見たいものを選ぶと自動で開始します。");
+syncUI(); setupCanvases(); log("「接続」→ ESP32-C3 を選択 → 「開始」。周波数は数字をクリック/ホイール、またはスペクトルをクリック。");
 </script>
 </body>
 </html>
