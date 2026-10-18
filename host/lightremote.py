@@ -65,8 +65,8 @@ def packets(path, thr=0):
         for s0, s1 in pkt.bursts_of(x, fs, thr, 150):
             seg = x[max(0, s0 - 64):s1 + 64]; best = None
             for ph, b, m in pkt.bitstreams(seg, fs, 1e6, True):
-                s = "".join(map(str, b)); k = s.find(SYNC)
-                if k >= 0 and (best is None or m > best[0]): best = (m, s[k + 32:])
+                s = "".join(map(str, b)); k = sync_pos(s, 2)            # tolerate up to 2 sync-bit errors
+                if k >= 0 and (best is None or m > best[0]): best = (m, s[k:])
             if best and len(best[1]) >= 320: out.append(((tt - T0) / 1e6 + s0 / fs, bytes(int(best[1][i:i + 8], 2) for i in range(0, 320, 8))))
     return sorted(out)
 
