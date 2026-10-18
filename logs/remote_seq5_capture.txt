@@ -1,0 +1,5 @@
+
+wrote 3477504 samples in 121879 blocks -> captures/web/remote_seq5.sigmf-meta
+  mode duty, rate 4000000 S/s, LO 2402.0 MHz (direct), gain 28
+  device: seq 121879 sent 121879 truncated 0 host resyncs 0
+CAPTURE DONE
