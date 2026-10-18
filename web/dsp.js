@@ -50,33 +50,48 @@ const DSP = (() => {
     return db;
   }
   function median(a) { const b = Float32Array.from(a).sort(); return b[b.length >> 1]; }
-  // ---------- signal detection on one PSD row ----------
-  // returns [{bbLo, bbHi (MHz), peakDb, meanDb, width}] of contiguous bins above floor+thr
-  function detect(db, fs, thr) {
-    const n = db.length, fl = median(db), binW = fs / n / 1e6, out = []; let i = 0;
+  // ---------- noise-floor tracking and signal detection ----------
+  // Two floor estimates, combined per bin with min(): a slow-rising min-hold over time (finds the noise under bursty
+  // signals such as Wi-Fi that fill the whole span) and the row's 20th percentile (finds it under continuous signals
+  // such as LTE that occupy part of the span). The true noise is below both.
+  function makeFloor(nfft) { return { hold: null, update(db) { const s = Float32Array.from(db).sort(); const p20 = s[Math.floor(0.2 * s.length)];
+      if (!this.hold) this.hold = Float32Array.from(db); const out = new Float32Array(db.length);
+      for (let i = 0; i < db.length; i++) { this.hold[i] = Math.min(db[i], this.hold[i] + 0.25); out[i] = Math.min(this.hold[i], p20); } return out; } }; }
+  // returns [{bbLo, bbHi (MHz), peakDb, meanDb, width}] of contiguous (smoothed) bins above floor+thr; gaps < 3 bins are merged
+  function detect(db, fs, thr, floor) {
+    const n = db.length, binW = fs / n / 1e6, sm = new Float32Array(n), k = n >= 512 ? 2 : 1;
+    for (let i = 0; i < n; i++) { let a = 0, c = 0; for (let j = i - k; j <= i + k; j++) if (j >= 0 && j < n) { a += db[j]; c++; } sm[i] = a / c; }
+    const fl = floor || new Float32Array(n).fill(median(db));
+    const hot = new Uint8Array(n); for (let i = 0; i < n; i++) hot[i] = sm[i] - fl[i] > thr ? 1 : 0;
+    const out = []; let i = 0;
     while (i < n) {
-      if (db[i] - fl > thr) { let j = i, pk = db[i], sum = 0; while (j + 1 < n && db[j + 1] - fl > thr) { j++; if (db[j] > pk) pk = db[j]; }
-        for (let k = i; k <= j; k++) sum += db[k] - fl;
-        out.push({ bbLo: (i / n - 0.5) * fs / 1e6, bbHi: ((j + 1) / n - 0.5) * fs / 1e6, peakDb: pk - fl, meanDb: sum / (j - i + 1), width: (j - i + 1) * binW }); i = j + 1; }
+      if (hot[i]) { let j = i; for (;;) { while (j + 1 < n && hot[j + 1]) j++; let g = j + 1; while (g < n && !hot[g] && g - j <= 3) g++; if (g < n && hot[g] && g - j <= 3) { j = g; continue; } break; }
+        let pk = -1e9, sum = 0; for (let q = i; q <= j; q++) { const v = db[q] - fl[q]; if (v > pk) pk = v; sum += v; }
+        out.push({ bbLo: (i / n - 0.5) * fs / 1e6, bbHi: ((j + 1) / n - 0.5) * fs / 1e6, peakDb: pk, meanDb: sum / (j - i + 1), width: (j - i + 1) * binW }); i = j + 1; }
       else i++;
     }
     return out;
   }
-  // classify a detection by its width (MHz), persistence (fraction of recent blocks it was present), and band table
+  // classify a detection by its width (MHz), persistence (fraction of recent blocks it was present), and the band table
   function classify(det, loMHz, fs, persist) {
     const bbC = (det.bbLo + det.bbHi) / 2, rfC = loMHz - bbC, rfLo = loMHz - det.bbHi, rfHi = loMHz - det.bbLo;
     const internal = det.width < 0.3 ? internalAt(bbC, loMHz) : null;
-    if (internal) return { label: internal, kind: "internal", rfC, rfLo, rfHi, conf: "内部" };
-    const bands = bandsAt(rfC).filter(b => b.kind !== "ism");
-    let guess = "", kind = "unknown";
-    const span = fs / 1e6, w = det.width;
-    if (w >= Math.min(12, span * 0.6)) { guess = persist > 0.6 ? "広帯域・連続 (LTE 下り的)" : "広帯域バースト (Wi-Fi 的)"; kind = persist > 0.6 ? "lte" : "wifi"; }
-    else if (w >= 0.6 && w <= 3) { guess = "約 1〜2 MHz のバースト (BLE / Zigbee 的)"; kind = "ble"; }
-    else if (w < 0.3) { guess = persist > 0.6 ? "連続トーン" : "短いトーン"; kind = "tone"; }
-    else guess = "中帯域";
-    const named = bands.filter(b => (kind === "wifi" && b.kind === "wifi") || (kind === "ble" && (b.kind.startsWith("ble") || b.kind === "zigbee")) || (kind === "lte" && b.kind.startsWith("lte")) || (kind === "lte" && b.kind === "dect"));
-    const label = (named.length ? named.map(b => b.name).slice(0, 3).join(" / ") : (bands[0] ? bands[0].name : "未知")) + " — " + guess;
-    return { label, kind, rfC, rfLo, rfHi, conf: named.length ? "バンド表と一致" : "幅からの推定" };
+    if (internal) return { label: internal, kind: "internal", rfC, rfLo, rfHi, conf: "ESP32 内部由来" };
+    const bands = bandsAt(rfC).filter(b => b.kind !== "ism"), span = fs / 1e6, w = det.width;
+    let kind, guess;
+    if (span < 8 && w >= 0.7 * span) { kind = "fill"; guess = `視野 (${span.toFixed(1)} MHz) いっぱいの信号。レートを 16 MS/s 以上にすると幅で判別できます`; }
+    else if (w >= 12 || (span <= 16.5 && w >= 0.7 * span)) { kind = "wide"; guess = "広帯域 (≥ 12 MHz)"; }
+    else if (w >= 3.5) { kind = "mid"; guess = `約 ${w.toFixed(0)} MHz 幅`; }
+    else if (w >= 0.6) { kind = "ble"; guess = "1〜2 MHz 幅のバースト (BLE / Zigbee 的)"; }
+    else { kind = "tone"; guess = "トーン"; }
+    const pick = kinds => bands.filter(b => kinds.includes(b.kind)).sort((a, b) => Math.abs(a.f0 - rfC) - Math.abs(b.f0 - rfC)).map(b => b.name);   // nearest centre first
+    let label, conf;
+    if (kind === "fill") { const nm = pick(["wifi", "lte", "lte_td", "lte_ul", "dect", "ble_adv", "ble", "zigbee"]); label = (nm.length ? nm[0] + " 付近 — " : "") + guess; conf = "視野が狭く未判定"; kind = "unknown"; }
+    else if (kind === "wide") { const wifi = pick(["wifi"]), lte = pick(["lte", "lte_td", "lte_ul"]); label = (wifi.length ? wifi[0] + (wifi.length > 1 ? "（±1 ch 重なり）" : "") : lte.length ? lte[0] : "未知の広帯域") + " — " + guess; conf = wifi.length || lte.length ? "バンド表と一致" : "幅からの推定"; kind = wifi.length && !lte.length ? "wifi" : "lte"; }
+    else if (kind === "ble") { const nm = pick(["ble_adv", "ble", "zigbee"]); label = (nm.length ? nm.slice(0, 2).join(" または ") : "未知") + " — " + guess; conf = nm.length ? "バンド表と一致" : "幅からの推定"; }
+    else if (kind === "mid") { const nm = pick(["lte", "lte_td", "lte_ul", "dect"]); label = (nm.length ? nm[0] + " — " : "") + guess + (nm.length ? "" : " (未知)"); conf = nm.length ? "バンド表と一致" : "幅からの推定"; kind = nm.length ? "lte" : "unknown"; }
+    else { const inb = bands.map(b => b.name)[0]; label = `トーン ${rfC.toFixed(3)} MHz` + (inb ? `（${inb} の範囲内）` : ""); conf = "幅からの推定"; }
+    return { label, kind, rfC, rfLo, rfHi, conf };
   }
   // ---------- BLE 1M advertising decode (port of host/ble.py) ----------
   const ADV_AA = 0x8E89BED6, PDU_TYPES = ["ADV_IND", "ADV_DIRECT_IND", "ADV_NONCONN_IND", "SCAN_REQ", "SCAN_RSP", "CONNECT_IND", "ADV_SCAN_IND", "ADV_EXT_IND"];
@@ -118,6 +133,6 @@ const DSP = (() => {
     }
     return hits;
   }
-  return { BANDS, KIND_COLOR, INTERNAL_BB, bandsAt, internalAt, fft, unpack, psd, median, detect, classify, bleDecode };
+  return { BANDS, KIND_COLOR, INTERNAL_BB, bandsAt, internalAt, fft, unpack, psd, median, makeFloor, detect, classify, bleDecode };
 })();
 if (typeof module !== "undefined") module.exports = DSP;

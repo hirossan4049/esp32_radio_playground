@@ -182,16 +182,16 @@ function drawWfRow(db, gapRows) {
 }
 // ---------- detections ----------
 const recent = [];   // {t, items:[{key,label,kind,rfLo,rfHi,peak,conf}]}
-let blocksSeen = 0;
+let floorTracker = null;
 function noteDetections(db) {
-  const dets = DSP.detect(db, fs, 8); const items = []; blocksSeen++;
-  for (const d of dets) { const cl = DSP.classify(d, lo / 1e6, fs, 1); const key = cl.kind + ":" + (Math.round(cl.rfC * 2) / 2).toFixed(1); items.push({ key, label: cl.label, kind: cl.kind, rfLo: cl.rfLo, rfHi: cl.rfHi, peak: d.peakDb, conf: cl.conf }); }
+  const floor = floorTracker.update(db); const dets = DSP.detect(db, fs, 8, floor); const items = []; const keys = new Set();
+  for (const d of dets) { const cl = DSP.classify(d, lo / 1e6, fs, 1); const key = cl.kind + ":" + (Math.round(cl.rfC * 2) / 2).toFixed(1); if (keys.has(key)) continue; keys.add(key); items.push({ key, label: cl.label, kind: cl.kind, rfLo: cl.rfLo, rfHi: cl.rfHi, peak: d.peakDb, conf: cl.conf }); }
   const now = performance.now(); recent.push({ t: now, items }); while (recent.length && now - recent[0].t > 5000) recent.shift();
 }
 function renderDetections() {
   const agg = new Map(); const nb = recent.length || 1;
   for (const r of recent) for (const it of r.items) { const a = agg.get(it.key) || { n: 0, peak: 0, lo: it.rfLo, hi: it.rfHi, label: it.label, kind: it.kind, conf: it.conf }; a.n++; a.peak = Math.max(a.peak, it.peak); a.lo = Math.min(a.lo, it.rfLo); a.hi = Math.max(a.hi, it.rfHi); agg.set(it.key, a); }
-  const rows = [...agg.values()].map(a => { const persist = a.n / nb; let label = a.label; if (a.kind === "wifi" && persist > 0.6) label = label.replace("広帯域バースト (Wi-Fi 的)", "広帯域・連続 (LTE 下り的)"); if (a.kind === "lte" && persist < 0.3) label = label.replace("広帯域・連続 (LTE 下り的)", "広帯域バースト (Wi-Fi 的)"); return { ...a, persist, label }; }).sort((x, y) => y.peak - x.peak).slice(0, 12);
+  const rows = [...agg.values()].map(a => { const persist = a.n / nb; const label = a.label + (a.kind === "wifi" || a.kind === "lte" || a.kind === "unknown" ? (persist > 0.6 ? "・連続 (基地局など)" : persist < 0.3 ? "・間欠バースト (Wi-Fi パケットなど)" : "") : ""); return { ...a, persist, label }; }).sort((x, y) => y.peak - x.peak).slice(0, 12);
   const tb = $("dets").querySelector("tbody"); tb.innerHTML = rows.map(a => `<tr><td><span class="sw k-${a.kind}"></span>${a.label}<div class="small">${a.conf}</div></td><td>${a.lo.toFixed(2)}〜${a.hi.toFixed(2)}</td><td>+${a.peak.toFixed(0)} dB</td><td>${(100 * a.persist).toFixed(0)}%</td></tr>`).join("");
   $("detnote").textContent = rows.length ? "出現 = 直近 5 秒のブロックのうち検出された割合。100% 近いものは連続波、数% は間欠バースト。" : "床から 8 dB 以上の信号はまだありません。";
 }
@@ -206,7 +206,7 @@ function onLiveFrame(seq, tus, nsamp, fmt, flags, payload) {
   let gapRows = 0; const blockUs = 16384 / 16e6 * 1e6 * (fs >= 16e6 ? 16e6 / fs : 1);
   if (lastT !== null) { const dt = (tus - lastT) >>> 0; tHist.push(dt); if (tHist.length > 100) tHist.shift(); gapRows = Math.min(5, Math.max(0, Math.round((dt - blockUs) / blockUs))); const med = tHist.slice().sort((a, b) => a - b)[tHist.length >> 1]; $("duty").textContent = (100 * Math.min(1, blockUs / med)).toFixed(0) + "% (" + (med / 1000).toFixed(2) + " ms 毎)"; }
   lastT = tus; $("drops").textContent = `${drops} / ${trunc}`;
-  if (!nsamp) return;
+  if (!nsamp) { recent.push({ t: now, items: [] }); return; }   // skipped (event mode) blocks count as "nothing seen"
   const { I, Q } = DSP.unpack(payload, fmt); const db = DSP.psd(I, Q, nfft, win, re, im); drawSpec(db); drawWfRow(db, gapRows); noteDetections(db);
   if (bleChannel && (fs === 4e6 || fs === 2e6)) noteBle(DSP.bleDecode(I, Q, fs, bleChannel));
 }
@@ -214,7 +214,7 @@ $("start").onclick = async () => {
   try { if (scanning) return; await stopStream();
     lo = Math.round(parseFloat($("freq").value) * 1e6); const rate = parseInt($("rate").value), gain = parseInt($("gain").value), thr = parseInt($("thr").value) || 0; fs = rate;
     nfft = fs >= 16e6 ? 1024 : fs >= 2e6 ? 512 : 256; re = new Float32Array(nfft); im = new Float32Array(nfft); win = Float32Array.from({ length: nfft }, (_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (nfft - 1)));
-    avg = hold = null; frames = drops = trunc = 0; lastT = null; tHist = []; recent.length = 0; bleSeen.clear(); vmin = 0; vmax = 60; ov.style.display = "none"; setupCanvases();
+    avg = hold = null; frames = drops = trunc = 0; lastT = null; tHist = []; recent.length = 0; bleSeen.clear(); floorTracker = DSP.makeFloor(nfft); vmin = 0; vmax = 60; ov.style.display = "none"; setupCanvases();
     const rp = ratePlan(rate); const plan = await setupRadio(lo, gain);
     bleChannel = { 2402: 37, 2426: 38, 2480: 39 }[Math.round(lo / 1e6)] || null;
     $("warn").textContent = [rp.ctrl === 0x13fff ? "16 MS/s 系: ±8 MHz の外 (8〜11 MHz) が折り返して見えることがあります。" : "", plan.alt ? `5/6 モード (PLL ${(plan.pllKhz / 1e3).toFixed(3)} MHz)。この領域は内部スプリアスが多めです。` : "", bleChannel ? (fs <= 4e6 ? "BLE 広告チャネル: 復号を有効化。" : "BLE を復号するにはレートを 4 MS/s にしてください。") : ""].join(" ");
