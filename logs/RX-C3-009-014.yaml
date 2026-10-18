@@ -65,3 +65,9 @@
   capture_path: logs/RX-C3-018_lane_probe_forced.json, logs/RX-C3-018_lane_probe_normal.json, captures/lane_*.bin
   result: forced RX: only lanes 0..3 (I/Q bytes) vary; lanes 4..63 static status bytes
   interpretation: see docs for the normal-RX condition
+- experiment_id: RX-C3-019
+  title: Incident - block 0x6d is the core-voltage regulator; chip crash-looped after reg6 bit4 flip; recovered through the ROM downloader
+  date: 2026-10-18
+  capture_path: logs/RX-C3-011_flip_blk6d.json, host/rom_recover_analog.py
+  result: 0x6d reg6 read back 0x8b via esptool write_mem/read_mem on the analog I2C master; restored to 0x9b; board boots normally
+  interpretation: analog I2C registers survive chip reset; power/clock blocks are excluded from flip scans from now on
