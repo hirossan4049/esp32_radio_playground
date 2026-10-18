@@ -71,3 +71,10 @@
   capture_path: logs/RX-C3-011_flip_blk6d.json, host/rom_recover_analog.py
   result: 0x6d reg6 read back 0x8b via esptool write_mem/read_mem on the analog I2C master; restored to 0x9b; board boots normally
   interpretation: analog I2C registers survive chip reset; power/clock blocks are excluded from flip scans from now on
+- experiment_id: RX-C3-020
+  title: Single-bit flips of RF-domain blocks 0x64 (regs 0-10) and 0x67 BBTOP (regs 0-15)
+  date: 2026-10-18
+  capture_path: logs/RX-C3-011_flip_blk64.json, logs/RX-C3-011_flip_blk67.json, logs/RX-C3-020_i2c_blk67_0_63.json, logs/RX-C3-020_chain3_run.txt, logs/RX-C3-020_chain4_run.txt
+  control_result: 216 flips, 0 hangs; 0x67 reg2 bit5 kills the receiver (baseband enable, cf. rom1_phy_close_rf)
+  result: all other flips keep ratio 1; no LO divider or alternate conversion
+  interpretation: with RX-C3-011, all RF-domain analog blocks are covered by single-bit flips; conversion ratios remain {1, 5/6}

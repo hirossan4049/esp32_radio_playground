@@ -1,0 +1,133 @@
+### 0x67 full register dump (read only) 2026年 10月18日 日曜日 12時09分34秒 JST
+blk 67 regs 0..63: 00 00 26 f4 23 23 0c 0c 10 10 10 10 23 23 0c 0c 10 10 10 10 17 17 16 16 1e 1e 1e 1e 2d 37 12 15 1e 1e 1e 1e 48 08 90 90 48 08 90 90 88 88 90 90 88 88 90 90 11 11 00 55 ff 00 00 00 00 00 00 00
+### flip scan 0x67 regs 0-15 2026年 10月18日 日曜日 12時09分34秒 JST
+blk 67 reg 0 bit0 00->01: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 29
+blk 67 reg 0 bit1 00->02: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 31
+blk 67 reg 0 bit2 00->04: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 30
+blk 67 reg 0 bit3 00->08: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 34
+blk 67 reg 0 bit4 00->10: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 29
+blk 67 reg 0 bit5 00->20: marker(+3MHz at 40k+3) 12/16  best r=1 9/16  dead=0  istd med 33
+blk 67 reg 0 bit6 00->40: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg 0 bit7 00->80: marker(+3MHz at 40k+3) 12/16  best r=1 9/16  dead=0  istd med 32
+blk 67 reg 1 bit0 00->01: marker(+3MHz at 40k+3) 10/16  best r=1 9/16  dead=0  istd med 30
+blk 67 reg 1 bit1 00->02: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 32
+blk 67 reg 1 bit2 00->04: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 33
+blk 67 reg 1 bit3 00->08: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 32
+blk 67 reg 1 bit4 00->10: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg 1 bit5 00->20: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 31
+blk 67 reg 1 bit6 00->40: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 30
+blk 67 reg 1 bit7 00->80: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg 2 bit0 26->27: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg 2 bit1 26->24: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg 2 bit2 26->22: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 34
+blk 67 reg 2 bit3 26->2e: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg 2 bit4 26->36: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 35
+blk 67 reg 2 bit5 26->06: marker(+3MHz at 40k+3) 0/16  best r=1/2 8/8  dead=0  istd med 2
+blk 67 reg 2 bit6 26->66: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 30
+blk 67 reg 2 bit7 26->a6: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg 3 bit0 f4->f5: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 31
+blk 67 reg 3 bit1 f4->f6: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 32
+blk 67 reg 3 bit2 f4->f0: marker(+3MHz at 40k+3) 12/16  best r=1 9/16  dead=0  istd med 30
+blk 67 reg 3 bit3 f4->fc: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 34
+blk 67 reg 3 bit4 f4->e4: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 29
+blk 67 reg 3 bit5 f4->d4: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 35
+blk 67 reg 3 bit6 f4->b4: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 29
+blk 67 reg 3 bit7 f4->74: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 34
+blk 67 reg 4 bit0 23->22: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg 4 bit1 23->21: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg 4 bit2 23->27: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 31
+blk 67 reg 4 bit3 23->2b: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 34
+blk 67 reg 4 bit4 23->33: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 27
+blk 67 reg 4 bit5 23->03: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 39
+blk 67 reg 4 bit6 23->63: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 33
+blk 67 reg 4 bit7 23->a3: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg 5 bit0 23->22: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 31
+blk 67 reg 5 bit1 23->21: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 31
+blk 67 reg 5 bit2 23->27: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 30
+blk 67 reg 5 bit3 23->2b: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 32
+blk 67 reg 5 bit4 23->33: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 32
+blk 67 reg 5 bit5 23->03: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 40
+blk 67 reg 5 bit6 23->63: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 32
+blk 67 reg 5 bit7 23->a3: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 28
+blk 67 reg 6 bit0 0c->0d: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 30
+blk 67 reg 6 bit1 0c->0e: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 27
+blk 67 reg 6 bit2 0c->08: marker(+3MHz at 40k+3) 12/16  best r=1 9/16  dead=0  istd med 30
+blk 67 reg 6 bit3 0c->04: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 34
+blk 67 reg 6 bit4 0c->1c: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 31
+blk 67 reg 6 bit5 0c->2c: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 33
+blk 67 reg 6 bit6 0c->4c: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 31
+blk 67 reg 6 bit7 0c->8c: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg 7 bit0 0c->0d: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 30
+blk 67 reg 7 bit1 0c->0e: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 34
+blk 67 reg 7 bit2 0c->08: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 28
+blk 67 reg 7 bit3 0c->04: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 30
+blk 67 reg 7 bit4 0c->1c: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 30
+blk 67 reg 7 bit5 0c->2c: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 28
+blk 67 reg 7 bit6 0c->4c: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 32
+blk 67 reg 7 bit7 0c->8c: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 29
+blk 67 reg 8 bit0 10->11: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 34
+blk 67 reg 8 bit1 10->12: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 28
+blk 67 reg 8 bit2 10->14: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 31
+blk 67 reg 8 bit3 10->18: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 29
+blk 67 reg 8 bit4 10->00: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 28
+blk 67 reg 8 bit5 10->30: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg 8 bit6 10->50: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 28
+blk 67 reg 8 bit7 10->90: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 29
+blk 67 reg 9 bit0 10->11: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 29
+blk 67 reg 9 bit1 10->12: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 29
+blk 67 reg 9 bit2 10->14: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 30
+blk 67 reg 9 bit3 10->18: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg 9 bit4 10->00: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 33
+blk 67 reg 9 bit5 10->30: marker(+3MHz at 40k+3) 10/16  best r=1 9/16  dead=0  istd med 30
+blk 67 reg 9 bit6 10->50: marker(+3MHz at 40k+3) 11/16  best r=1 8/16  dead=0  istd med 33
+blk 67 reg 9 bit7 10->90: marker(+3MHz at 40k+3) 13/16  best r=1 9/16  dead=0  istd med 35
+blk 67 reg10 bit0 10->11: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 33
+blk 67 reg10 bit1 10->12: marker(+3MHz at 40k+3) 12/16  best r=1 8/16  dead=0  istd med 34
+blk 67 reg10 bit2 10->14: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 33
+blk 67 reg10 bit3 10->18: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 31
+blk 67 reg10 bit4 10->00: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 34
+blk 67 reg10 bit5 10->30: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 36
+blk 67 reg10 bit6 10->50: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg10 bit7 10->90: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 27
+blk 67 reg11 bit0 10->11: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 34
+blk 67 reg11 bit1 10->12: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 35
+blk 67 reg11 bit2 10->14: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 30
+blk 67 reg11 bit3 10->18: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 32
+blk 67 reg11 bit4 10->00: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 33
+blk 67 reg11 bit5 10->30: marker(+3MHz at 40k+3) 10/16  best r=1 9/16  dead=0  istd med 36
+blk 67 reg11 bit6 10->50: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 33
+blk 67 reg11 bit7 10->90: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 31
+blk 67 reg12 bit0 23->22: marker(+3MHz at 40k+3) 12/16  best r=1 8/16  dead=0  istd med 33
+blk 67 reg12 bit1 23->21: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 43
+blk 67 reg12 bit2 23->27: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 30
+blk 67 reg12 bit3 23->2b: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 32
+blk 67 reg12 bit4 23->33: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg12 bit5 23->03: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 39
+blk 67 reg12 bit6 23->63: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg12 bit7 23->a3: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 32
+blk 67 reg13 bit0 23->22: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 25
+blk 67 reg13 bit1 23->21: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg13 bit2 23->27: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 34
+blk 67 reg13 bit3 23->2b: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 27
+blk 67 reg13 bit4 23->33: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg13 bit5 23->03: marker(+3MHz at 40k+3) 10/16  best r=1 8/16  dead=0  istd med 33
+blk 67 reg13 bit6 23->63: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 36
+blk 67 reg13 bit7 23->a3: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 31
+blk 67 reg14 bit0 0c->0d: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 32
+blk 67 reg14 bit1 0c->0e: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg14 bit2 0c->08: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 33
+blk 67 reg14 bit3 0c->04: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg14 bit4 0c->1c: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 31
+blk 67 reg14 bit5 0c->2c: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 34
+blk 67 reg14 bit6 0c->4c: marker(+3MHz at 40k+3) 10/16  best r=1 9/16  dead=0  istd med 32
+blk 67 reg14 bit7 0c->8c: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 39
+blk 67 reg15 bit0 0c->0d: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 30
+blk 67 reg15 bit1 0c->0e: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 30
+blk 67 reg15 bit2 0c->08: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 31
+blk 67 reg15 bit3 0c->04: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 35
+blk 67 reg15 bit4 0c->1c: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 34
+blk 67 reg15 bit5 0c->2c: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 30
+blk 67 reg15 bit6 0c->4c: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 38
+blk 67 reg15 bit7 0c->8c: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 34
+DONE
+### CHAIN4 DONE 2026年 10月18日 日曜日 12時12分19秒 JST

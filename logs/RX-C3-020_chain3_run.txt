@@ -7,3 +7,160 @@ mean|I|+|Q|: median 12  p90 38  max 104   peak: median 15 max 511  sat(>=500) bl
    long SFD at symbol 313  SIGNAL=0x0a SERVICE=0x04 LENGTH=2992 us  CRC OK  sync soft 1.00
     SSID(16)='LOCALHOUSE_SPACE'
 ### flip scan 0x64 2026年 10月18日 日曜日 12時07分27秒 JST
+blk 64 reg 0 bit0 00->01: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg 0 bit1 00->02: marker(+3MHz at 40k+3) 12/16  best r=1 9/16  dead=0  istd med 30
+blk 64 reg 0 bit2 00->04: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 29
+blk 64 reg 0 bit3 00->08: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg 0 bit4 00->10: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 30
+blk 64 reg 0 bit5 00->20: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 26
+blk 64 reg 0 bit6 00->40: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg 0 bit7 00->80: marker(+3MHz at 40k+3) 12/16  best r=1 8/16  dead=0  istd med 29
+blk 64 reg 1 bit0 00->01: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 29
+blk 64 reg 1 bit1 00->02: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 30
+blk 64 reg 1 bit2 00->04: marker(+3MHz at 40k+3) 14/16  best r=1 11/16  dead=0  istd med 31
+blk 64 reg 1 bit3 00->08: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg 1 bit4 00->10: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 30
+blk 64 reg 1 bit5 00->20: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 30
+blk 64 reg 1 bit6 00->40: marker(+3MHz at 40k+3) 14/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg 1 bit7 00->80: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 30
+blk 64 reg 2 bit0 00->01: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg 2 bit1 00->02: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 31
+blk 64 reg 2 bit2 00->04: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 31
+blk 64 reg 2 bit3 00->08: marker(+3MHz at 40k+3) 10/16  best r=1 9/16  dead=0  istd med 28
+blk 64 reg 2 bit4 00->10: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 35
+blk 64 reg 2 bit5 00->20: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 29
+blk 64 reg 2 bit6 00->40: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 31
+blk 64 reg 2 bit7 00->80: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 35
+blk 64 reg 3 bit0 00->01: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg 3 bit1 00->02: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 32
+blk 64 reg 3 bit2 00->04: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 33
+blk 64 reg 3 bit3 00->08: marker(+3MHz at 40k+3) 14/16  best r=1 14/16  dead=0  istd med 30
+blk 64 reg 3 bit4 00->10: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 36
+blk 64 reg 3 bit5 00->20: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 33
+blk 64 reg 3 bit6 00->40: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 31
+blk 64 reg 3 bit7 00->80: marker(+3MHz at 40k+3) 10/16  best r=1 10/16  dead=0  istd med 32
+blk 64 reg 4 bit0 41->40: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 29
+blk 64 reg 4 bit1 41->43: marker(+3MHz at 40k+3) 14/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg 4 bit2 41->45: marker(+3MHz at 40k+3) 11/16  best r=1 8/16  dead=0  istd med 33
+blk 64 reg 4 bit3 41->49: marker(+3MHz at 40k+3) 9/16  best r=1 6/16  dead=0  istd med 36
+blk 64 reg 4 bit4 41->51: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 35
+blk 64 reg 4 bit5 41->61: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 29
+blk 64 reg 4 bit6 41->01: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 36
+blk 64 reg 4 bit7 41->c1: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 32
+blk 64 reg 5 bit0 12->13: marker(+3MHz at 40k+3) 15/16  best r=1 11/16  dead=0  istd med 33
+blk 64 reg 5 bit1 12->10: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg 5 bit2 12->16: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 34
+blk 64 reg 5 bit3 12->1a: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 29
+blk 64 reg 5 bit4 12->02: marker(+3MHz at 40k+3) 9/16  best r=1 7/16  dead=0  istd med 12
+blk 64 reg 5 bit5 12->32: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 32
+blk 64 reg 5 bit6 12->52: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 42
+blk 64 reg 5 bit7 12->92: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 32
+blk 64 reg 6 bit0 10->11: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 29
+blk 64 reg 6 bit1 10->12: marker(+3MHz at 40k+3) 12/16  best r=1 9/16  dead=0  istd med 31
+blk 64 reg 6 bit2 10->14: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 32
+blk 64 reg 6 bit3 10->18: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 29
+blk 64 reg 6 bit4 10->00: marker(+3MHz at 40k+3) 13/16  best r=1 9/16  dead=0  istd med 32
+blk 64 reg 6 bit5 10->30: marker(+3MHz at 40k+3) 12/16  best r=1 9/16  dead=0  istd med 30
+blk 64 reg 6 bit6 10->50: marker(+3MHz at 40k+3) 10/16  best r=1 9/16  dead=0  istd med 32
+blk 64 reg 6 bit7 10->90: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 32
+blk 64 reg 7 bit0 48->49: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 28
+blk 64 reg 7 bit1 48->4a: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 29
+blk 64 reg 7 bit2 48->4c: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 28
+blk 64 reg 7 bit3 48->40: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 30
+blk 64 reg 7 bit4 48->58: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 33
+blk 64 reg 7 bit5 48->68: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 32
+blk 64 reg 7 bit6 48->08: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 31
+blk 64 reg 7 bit7 48->c8: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 32
+blk 64 reg 8 bit0 91->90: marker(+3MHz at 40k+3) 11/16  best r=1 5/16  dead=0  istd med 13
+blk 64 reg 8 bit1 91->93: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 32
+blk 64 reg 8 bit2 91->95: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 28
+blk 64 reg 8 bit3 91->99: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 31
+blk 64 reg 8 bit4 91->81: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 34
+blk 64 reg 8 bit5 91->b1: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 31
+blk 64 reg 8 bit6 91->d1: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 29
+blk 64 reg 8 bit7 91->11: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 31
+blk 64 reg 9 bit0 00->01: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 29
+blk 64 reg 9 bit1 00->02: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 31
+blk 64 reg 9 bit2 00->04: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 31
+blk 64 reg 9 bit3 00->08: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 34
+blk 64 reg 9 bit4 00->10: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 32
+blk 64 reg 9 bit5 00->20: marker(+3MHz at 40k+3) 10/16  best r=1 9/16  dead=0  istd med 33
+blk 64 reg 9 bit6 00->40: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 31
+blk 64 reg 9 bit7 00->80: marker(+3MHz at 40k+3) 11/16  best r=1 9/16  dead=0  istd med 31
+blk 64 reg10 bit0 ff->fe: marker(+3MHz at 40k+3) 11/16  best r=1 11/16  dead=0  istd med 28
+blk 64 reg10 bit1 ff->fd: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 32
+blk 64 reg10 bit2 ff->fb: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 30
+blk 64 reg10 bit3 ff->f7: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 32
+blk 64 reg10 bit4 ff->ef: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 31
+blk 64 reg10 bit5 ff->df: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 31
+blk 64 reg10 bit6 ff->bf: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 32
+blk 64 reg10 bit7 ff->7f: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 33
+DONE
+### lane probe normal 2026年 10月18日 日曜日 12時09分20秒 JST
+OK TUNE 2437000 kHz chan 6 pll 2436999664 Hz
+['AP 0c:73:29:4b:0c:d8 rssi=-80 count=3 last_us=185749082 dt_us=102410 ssid="0C73294B0CD9-2G"', 'END WIFICNT']
+v= 0 sel=00000000 uniq/byte [162, 163, 163, 162] entropy [6.4, 6.4, 6.4, 6.4] word-changes 16138 uniq-words 163 first ['16161616', 'efefefef']
+v= 1 sel=00041041 uniq/byte [112, 113, 113, 113] entropy [6.3, 6.3, 6.3, 6.3] word-changes 16176 uniq-words 113 first ['04040404', '3f3f3f3f']
+v= 2 sel=00082082 uniq/byte [12, 12, 12, 12] entropy [2.2, 2.2, 2.2, 2.2] word-changes 9701 uniq-words 12 first ['6f6f6f6f', '6f6f6f6f']
+v= 3 sel=000c30c3 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['24242424', '24242424']
+v= 4 sel=00104104 uniq/byte [105, 104, 104, 105] entropy [5.3, 5.3, 5.3, 5.3] word-changes 14566 uniq-words 105 first ['3e3e3e3e', '04040404']
+v= 5 sel=00145145 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['91919191', '91919191']
+v= 6 sel=00186186 uniq/byte [26, 26, 25, 26] entropy [0.3, 0.3, 0.3, 0.3] word-changes 45 uniq-words 26 first ['01010101', '01010101']
+v= 7 sel=001c71c7 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['80808080', '80808080']
+v= 8 sel=00208208 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v= 9 sel=00249249 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=10 sel=0028a28a uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['bdbdbdbd', 'bdbdbdbd']
+v=11 sel=002cb2cb uniq/byte [11, 11, 11, 11] entropy [0.2, 0.2, 0.2, 0.2] word-changes 20 uniq-words 11 first ['08080808', '08080808']
+v=12 sel=0030c30c uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=13 sel=0034d34d uniq/byte [3, 3, 3, 3] entropy [0.9, 0.9, 0.9, 0.9] word-changes 2 uniq-words 3 first ['12121212', '12121212']
+v=14 sel=0038e38e uniq/byte [4, 4, 4, 4] entropy [0.1, 0.1, 0.1, 0.1] word-changes 385 uniq-words 4 first ['02020202', '02020202']
+v=15 sel=003cf3cf uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=16 sel=00410410 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=17 sel=00451451 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=18 sel=00492492 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=19 sel=004d34d3 uniq/byte [5, 5, 5, 5] entropy [0.0, 0.0, 0.0, 0.0] word-changes 24 uniq-words 5 first ['00000000', '00000000']
+v=20 sel=00514514 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=21 sel=00555555 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=22 sel=00596596 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=23 sel=005d75d7 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=24 sel=00618618 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['80808080', '80808080']
+v=25 sel=00659659 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=26 sel=0069a69a uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=27 sel=006db6db uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=28 sel=0071c71c uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=29 sel=0075d75d uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=30 sel=0079e79e uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=31 sel=007df7df uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=32 sel=00820820 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=33 sel=00861861 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=34 sel=008a28a2 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=35 sel=008e38e3 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=36 sel=00924924 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=37 sel=00965965 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=38 sel=009a69a6 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=39 sel=009e79e7 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=40 sel=00a28a28 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=41 sel=00a69a69 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=42 sel=00aaaaaa uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=43 sel=00aebaeb uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=44 sel=00b2cb2c uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=45 sel=00b6db6d uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=46 sel=00baebae uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=47 sel=00befbef uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=48 sel=00c30c30 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=49 sel=00c71c71 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=50 sel=00cb2cb2 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=51 sel=00cf3cf3 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=52 sel=00d34d34 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=53 sel=00d75d75 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=54 sel=00db6db6 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=55 sel=00df7df7 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=56 sel=00e38e38 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=57 sel=00e79e79 uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=58 sel=00ebaeba uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=59 sel=00efbefb uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=60 sel=00f3cf3c uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=61 sel=00f7df7d uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=62 sel=00fbefbe uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+v=63 sel=00ffffff uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
+### CHAIN3 DONE 2026年 10月18日 日曜日 12時09分25秒 JST
