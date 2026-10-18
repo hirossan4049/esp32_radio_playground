@@ -120,3 +120,9 @@
   capture_path: captures/web/remote_seq3.sigmf-*, remote_seq4.sigmf-* (not in git), host/lightremote.py
   result: byte 23 = command class (0x42 on, 0x46 off, 0x86 adjust) stable across sessions; byte 30 = parameter (a1/a2 brightness up, 60 brightness down, 90-93 daylight); byte 29 counter +4 per ~1.5 s; bytes 31-36 counter-derived; byte 39 check (unknown)
   interpretation: proprietary 2.4 GHz lighting remote, plaintext fields identified for on/off/adjust; derived-value generator and check byte still unknown
+- experiment_id: RX-C3-028
+  title: Lighting remote decoded live (remote_live.py): command classes and parameters confirmed in time order
+  date: 2026-10-18
+  capture_path: logs/remote_live.txt, captures/web/remote_live*.sigmf-* (not in git), docs/remote_2402.md
+  result: byte 23 = 0x42 on / 0x46 off / 0x86 adjust; byte 30 bits 7..2 = 0x50 bright+, 0xa0 bright-, 0x60 daylight, 0x90 warm, 0x08 all-on (sub-format e5 43 ff fc); byte 30 bits 1..0 = packet sequence; bytes 28-29 = 14-bit counter
+  interpretation: verified by a 7-button ordered test and a 5x brightness-up test; derived bytes 31-36 and check byte 39 remain unknown

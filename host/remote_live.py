@@ -19,7 +19,7 @@ from esp32sdr.sigmf import SigMFWriter
 import pkt, lightremote
 
 CODES = lightremote.CODES
-PARAM = {0xa1: "明るさ↑", 0xa2: "明るさ↑", 0x60: "明るさ↓", 0x63: "全灯", 0x90: "昼光色", 0x91: "昼光色", 0x93: "昼光色", 0x92: "電球色"}   # byte 30 when byte 23 == 0x86
+PARAM = {0x50: "明るさ↑", 0xa0: "明るさ↓", 0x60: "昼光色", 0x90: "電球色", 0x08: "全灯"}   # byte 30 & 0xFC when byte 23 == 0x86 (low 2 bits = packet sequence)
 
 def unpack_frame(payload, fmt):
     if fmt: raw = np.frombuffer(payload, dtype="<i2"); x = raw[0::2].astype(np.float32) + 1j * raw[1::2].astype(np.float32)
@@ -60,9 +60,12 @@ def main():
                 P = np.array([int(c) for c in f"{pat:032b}"], dtype=np.int16); sel = [b for b in win if np.sum(b[:32] != P) <= 6]
                 if kind != "6DBF" or len(sel) < 2: continue
                 M = np.array(sel); v = (M.mean(axis=0) > 0.5).astype(np.uint8); by = bytes(np.packbits(v)); conf = float(np.mean(np.abs(M.mean(axis=0) - 0.5) * 2))
-                key = (by[23], by[30], by[29] >> 2)
+                key = (by[23], by[30] & 0xFC, by[29] >> 2)
                 if key != last_key:
-                    last_key = key; name = CODES.get(by[23], f"code 0x{by[23]:02x}"); pname = PARAM.get(by[30], f"param 0x{by[30]:02x}") if by[23] == 0x86 else f"param {by[30]:02x}"
+                    last_key = key; name = CODES.get(by[23], f"code 0x{by[23]:02x}")
+                    full = by[25:28] == b"\x43\xff\xfc"          # 全灯 uses a different sub-format
+                    pname = ("全灯" if full else PARAM.get(by[30] & 0xFC, f"param 0x{by[30] & 0xFC:02x}")) if by[23] == 0x86 else f"state {by[30] & 0xFC:02x}"
+                    pname += f" (seq {by[30] & 3})"
                     say(f"PRESS  {name:4s} {pname:10s}  counter {by[29] >> 2:3d}  session {by[28]:02x}  votes {len(sel):3d} conf {conf:.2f}  bytes22-39 {by[22:40].hex(' ')}")
             win = []; win_t = None
         def on_frame(seq, t_us, fmt, flags, payload):

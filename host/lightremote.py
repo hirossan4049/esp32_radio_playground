@@ -4,11 +4,10 @@
 Known layout of the "6DBF" packet type (after the sync word):
   [0..21]  fixed (device ID / header; starts cf bd 6d bf)
   [22]     0x18
-  [23]     command class: 0x42 = 点灯, 0x46 = 消灯, 0x86 = 調整 (明るさ↑/↓, 昼光色 ...); same values across sessions
-  [24..27] e5 40 00 00
-  [28]     session byte (0x01 in one session, 0x02 in the next)
-  [29]     counter, +4 every ~1.5 s while transmitting, continues across presses
-  [30]     parameter byte (with 0x86): a1/a2 明るさ↑, 60 明るさ↓, 63 全灯, 90/91/93 昼光色, 92 電球色; 00..03 with 点灯/消灯
+  [23]     command class: 0x42 = 点灯, 0x46 = 消灯, 0x86 = 調整 (明るさ↑/↓, 昼光色, 電球色, 全灯)
+  [24..27] e5 40 00 00  (全灯: e5 43 ff fc)
+  [28..29] 14-bit packet-group counter: byte 28 = high bits, byte 29 bits 7..2 = low 6 bits (+1 every ~1.5 s of transmission, continues across presses)
+  [30]     bits 7..2 = parameter: 0x50 明るさ↑, 0xa0 明るさ↓, 0x60 昼光色, 0x90 電球色, 0x08 全灯 (with the 43 ff fc sub-format); 0x00 with 点灯/消灯. bits 1..0 = packet sequence number
   [31..36] change with every counter step (derived values; generator unknown)
   [37..38] 4d c8..cb
   [39]     check byte (algorithm unknown)
@@ -22,7 +21,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from esp32sdr.sigmf import read_sigmf
 import pkt
 
-CODES = {0x42: "点灯", 0x46: "消灯", 0x86: "調整"}   # 0x86 covers 明るさ↑/↓ and 昼光色; byte 30 then carries the parameter (a1/a2 up, 60 down, 90..93 daylight)
+CODES = {0x42: "点灯", 0x46: "消灯", 0x86: "調整"}
+PARAM = {0x50: "明るさ↑", 0xa0: "明るさ↓", 0x60: "昼光色", 0x90: "電球色", 0x08: "全灯"}
 SYNC = f"{0xadf645c7:032b}"
 
 def sync_pos(s, maxerr=3):
@@ -88,6 +88,7 @@ def main():
             if key != last:
                 last = key; presses.append((t, by))
         for t, by in presses:
-            print(f"  t={t:7.2f}s  {CODES.get(by[23], f'code 0x{by[23]:02x}'):8s}  counter {by[29] >> 2:3d}  state {by[30]:02x}  session {by[28]:02x}  id {by[4:12].hex()}  check {by[39]:02x}")
+            full = by[25:28] == b"\x43\xff\xfc"; pname = ("全灯" if full else PARAM.get(by[30] & 0xFC, f"param {by[30] & 0xFC:02x}")) if by[23] == 0x86 else ""
+            print(f"  t={t:7.2f}s  {CODES.get(by[23], f'code 0x{by[23]:02x}'):4s} {pname:6s} counter {(by[28] << 6) | (by[29] >> 2):5d}  seq {by[30] & 3}  id {by[4:12].hex()}  check {by[39]:02x}")
 
 if __name__ == "__main__": main()

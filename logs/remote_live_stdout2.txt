@@ -1,0 +1,29 @@
+15:28:44  start LO 2402 MHz rate 16000000 gain 30
+15:28:45  noise 4 -> threshold 20; gain 30
+/Users/a/.pyenv/versions/3.11.3/lib/python3.11/site-packages/numpy/_core/fromnumeric.py:3860: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+/Users/a/.pyenv/versions/3.11.3/lib/python3.11/site-packages/numpy/_core/_methods.py:145: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+15:29:45  segment: frames 32450 bursts 294 packets 84 clipped 2 peak 507/511
+15:29:56  PRESS  調整   param 0x62  counter  43  session 00  votes   3 conf 0.90  bytes22-39 18 86 e5 40 00 00 00 ac 62 56 57 4a 52 6b 72 4d c9 07
+15:30:02  PRESS  調整   明るさ↓        counter  53  session 00  votes   2 conf 1.00  bytes22-39 18 86 e5 40 00 00 00 d4 60 1c 1d 84 1a 91 c6 4d c8 6a
+15:30:45  segment: frames 35198 bursts 271 packets 26 clipped 0 peak 261/511
+15:30:58  PRESS  点灯   param 01    counter  54  session 00  votes   3 conf 0.97  bytes22-39 18 42 e5 40 00 00 00 d8 01 f1 f3 c1 f5 66 d2 4d c8 00
+15:31:08  PRESS  code 0x44 param 00    counter  54  session 00  votes   2 conf 0.88  bytes22-39 10 44 c5 00 00 00 00 d8 00 51 02 81 14 f8 24 4d c8 35
+15:31:24  PRESS  調整   param 0x52  counter  57  session 00  votes   4 conf 1.00  bytes22-39 18 86 e5 40 00 00 00 e4 52 ca c8 82 ce 51 de 4d ca e3
+15:31:39  PRESS  調整   param 0xa0  counter  58  session 00  votes   3 conf 0.98  bytes22-39 18 86 e5 40 00 00 00 e8 a0 38 3b 40 3c da 32 4d c8 f3
+15:31:45  PRESS  調整   param 0x0b  counter  59  session 00  votes   2 conf 0.96  bytes22-39 18 86 e5 43 ff fc 00 ec 0b 53 53 cb 56 fc fe 4d c9 a0
+15:31:45  segment: frames 31406 bursts 331 packets 42 clipped 1 peak 507/511
+15:31:56  PRESS  調整   param 0x62  counter  60  session 00  votes   2 conf 1.00  bytes22-39 18 86 e5 40 00 00 00 f0 62 e6 e4 2a e1 0d 8e 4d cb 35
+15:32:08  PRESS  調整   電球色         counter  60  session 00  votes   2 conf 0.88  bytes22-39 18 86 e5 40 00 00 00 f0 92 62 62 06 60 10 82 4d cb 00
+15:32:45  segment: frames 23102 bursts 467 packets 150 clipped 4 peak 507/511
+15:32:45  gain -> 26 (clipping)
+15:32:46  noise 10 -> threshold 25; gain 26
+15:33:46  segment: frames 41843 bursts 150 packets 0 clipped 0 peak 258/511
+15:34:36  PRESS  調整   param 0x51  counter  63  session 00  votes   4 conf 1.00  bytes22-39 18 86 e5 40 00 00 00 fc 51 25 27 d9 23 25 46 4d c8 c6
+15:34:41  PRESS  調整   param 0x52  counter   0  session 01  votes   2 conf 1.00  bytes22-39 18 86 e5 40 00 00 01 00 52 aa a8 b2 af 68 d2 4d c9 aa
+15:34:44  PRESS  調整   param 0x53  counter   1  session 01  votes   4 conf 1.00  bytes22-39 18 86 e5 40 00 00 01 04 53 27 26 43 23 ad f2 4d c8 6d
+15:34:46  PRESS  調整   param 0x50  counter   2  session 01  votes   3 conf 1.00  bytes22-39 18 86 e5 40 00 00 01 08 50 e8 e8 2c ed 25 9a 4d ca bf
+15:34:46  segment: frames 37541 bursts 230 packets 26 clipped 0 peak 258/511
+15:35:46  PRESS  調整   param 0x51  counter   3  session 01  votes   3 conf 1.00  bytes22-39 18 86 e5 40 00 00 01 0c 51 39 39 c5 3c a8 b2 4d cb f0
+15:35:46  segment: frames 44290 bursts 115 packets 7 clipped 0 peak 391/511
