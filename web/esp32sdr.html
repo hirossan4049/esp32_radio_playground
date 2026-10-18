@@ -134,7 +134,7 @@ async function cmdWait(line, pattern, ms = 1500) {
   for (let attempt = 0; attempt < 3; attempt++) {
     binMode = false; textBuf = ""; await send(line); const t0 = performance.now();
     while (performance.now() - t0 < ms) { if (re.test(textBuf)) return textBuf; if (/^ERR/m.test(textBuf)) break; await new Promise(r => setTimeout(r, 15)); }
-    await writer.write(enc.encode("x\n")); await new Promise(r => setTimeout(r, 400));
+    await writer.write(enc.encode(attempt === 0 ? "x\n" : "\n")); await new Promise(r => setTimeout(r, 400));   // 1st retry: stop a possible stream
   }
   throw new Error(`応答なし: ${line} (${textBuf.trim().slice(-60)})`);
 }
@@ -164,7 +164,7 @@ async function setupRadio(loHz, gain) {
     const rep = await cmdWait("I2C 65 0", /^I2C 65:0 = ([0-9a-f]{2})/m); const cur = parseInt(rep.match(/^I2C 65:0 = ([0-9a-f]{2})/m)[1], 16); const want = plan.alt ? (cur | 0x10) : (cur & ~0x10);
     if (want !== cur) await cmdWait(`I2CW 65 0 ${want.toString(16).padStart(2, "0")}`, /^I2CW/m, 800);
   } catch (e) { if (plan.alt) throw new Error("5/6 モード設定に失敗: " + e.message); else log("CKGEN 読み出し失敗（直接モードなので続行）: " + e.message, "warn"); }
-  await cmdWait(`GAIN ${gain}`, /^OK GAIN/m); await cmdWait("WR 60033d90 000c2040", /^OK/m, 800).catch(e => log("レーン設定失敗: " + e.message, "warn"));
+  await cmdWait(`GAIN ${gain}`, /^OK GAIN/m); await cmdWait("WR 60033d90 000c2040", /^WR 60033d90 = /m, 800);     // firmware replies "WR <addr> = <val> now <val>"
   return plan;
 }
 // ---------- frame parser ("ESPW": 19-byte 7-bit header, uint8 offset-binary payload, no 0xFF anywhere) ----------
