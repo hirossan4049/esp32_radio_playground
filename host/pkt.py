@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from esp32sdr.sigmf import read_sigmf
 
 def bursts_of(x, fs, thr, minlen_us):
+    if len(x) < 64: return []
     env = np.convolve(np.abs(x), np.ones(16) / 16, mode="same"); idx = np.flatnonzero(env > thr)
     if not len(idx): return []
     out, a = [], idx[0]
@@ -22,6 +23,11 @@ def bursts_of(x, fs, thr, minlen_us):
         if q - p > 40: out.append((a, p)); a = q
     out.append((a, idx[-1]))
     return [(a, b) for a, b in out if (b - a) / fs * 1e6 >= minlen_us]
+
+def auto_thr(blocks):
+    """3x the quiet level: 20th percentile of per-block mean |x| (works for int8 and 10-bit scales)."""
+    m = np.array([np.abs(x).mean() for _, x in blocks if len(x) >= 64])
+    return float(np.percentile(m, 20) * 3) if len(m) else 18.0
 
 def bitstreams(seg, fs, rate, conj=True):
     """Yield (phase, bits) for every symbol phase; bits are hard decisions after CFO removal."""
@@ -43,8 +49,9 @@ def preamble_end(b, minalt=6):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("file"); ap.add_argument("--sync"); ap.add_argument("--find", action="store_true"); ap.add_argument("--rate", type=float, default=1e6)
-    ap.add_argument("--nbytes", type=int, default=40); ap.add_argument("--split", type=int, default=2); ap.add_argument("--diff", action="store_true"); ap.add_argument("--thr", type=float, default=18); ap.add_argument("--minlen", type=float, default=150); ap.add_argument("--direct", action="store_true")
+    ap.add_argument("--nbytes", type=int, default=40); ap.add_argument("--split", type=int, default=2); ap.add_argument("--diff", action="store_true"); ap.add_argument("--thr", type=float, default=0, help="burst threshold on |x|; 0 = automatic"); ap.add_argument("--minlen", type=float, default=150); ap.add_argument("--direct", action="store_true")
     a = ap.parse_args(); meta, blocks = read_sigmf(a.file); fs = meta["global"]["core:sample_rate"]; T0 = blocks[0][0]
+    if a.thr <= 0: a.thr = auto_thr(blocks)
     segs = [((t - T0) / 1e6 + s0 / fs, x[max(0, s0 - 64):s1 + 64]) for t, x in blocks for s0, s1 in bursts_of(x, fs, a.thr, a.minlen)]
     print(f"{a.file}: {len(blocks)} blocks, {len(segs)} bursts >= {a.minlen:.0f} us, fs {fs/1e6:g} MS/s, {a.rate/1e6:g} Mbps")
     if a.find or not a.sync:
