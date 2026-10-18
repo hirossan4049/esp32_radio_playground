@@ -66,3 +66,80 @@ v=62 sel=00fbefbe uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-chang
 v=63 sel=00ffffff uniq/byte [2, 2, 2, 2] entropy [0.0, 0.0, 0.0, 0.0] word-changes 1 uniq-words 2 first ['00000000', '00000000']
 ### flip scans 2026年 10月18日 日曜日 11時56分53秒 JST
 --- block 0x6d regs 0-14 2026年 10月18日 日曜日 11時56分53秒 JST
+blk 6d reg 2 bit4 80->90: marker(+3MHz at 40k+3) 13/16  best r=1 9/16  dead=0  istd med 33
+blk 6d reg 2 bit5 80->a0: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 29
+blk 6d reg 2 bit6 80->c0: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 28
+blk 6d reg 2 bit7 80->00: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 31
+blk 6d reg 3 bit0 04->05: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 31
+blk 6d reg 3 bit1 04->06: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 31
+blk 6d reg 3 bit2 04->00: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 29
+blk 6d reg 3 bit3 04->0c: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 32
+blk 6d reg 3 bit4 04->14: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 26
+blk 6d reg 3 bit5 04->24: marker(+3MHz at 40k+3) 11/16  best r=1 10/16  dead=0  istd med 31
+blk 6d reg 3 bit6 04->44: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 32
+blk 6d reg 3 bit7 04->84: marker(+3MHz at 40k+3) 13/16  best r=1 11/16  dead=0  istd med 30
+blk 6d reg 4 bit0 98->99: marker(+3MHz at 40k+3) 14/16  best r=1 13/16  dead=0  istd med 29
+blk 6d reg 4 bit1 98->9a: marker(+3MHz at 40k+3) 15/16  best r=1 14/16  dead=0  istd med 33
+blk 6d reg 4 bit2 98->9c: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 30
+blk 6d reg 4 bit3 98->90: marker(+3MHz at 40k+3) 12/16  best r=1 11/16  dead=0  istd med 44
+blk 6d reg 4 bit4 98->88: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 33
+blk 6d reg 4 bit5 98->b8: marker(+3MHz at 40k+3) 14/16  best r=1 11/16  dead=0  istd med 31
+blk 6d reg 4 bit6 98->d8: marker(+3MHz at 40k+3) 13/16  best r=1 9/16  dead=0  istd med 32
+blk 6d reg 4 bit7 98->18: marker(+3MHz at 40k+3) 15/16  best r=1 13/16  dead=0  istd med 24
+blk 6d reg 5 bit0 18->19: marker(+3MHz at 40k+3) 14/16  best r=1 10/16  dead=0  istd med 23
+blk 6d reg 5 bit1 18->1a: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 31
+blk 6d reg 5 bit2 18->1c: marker(+3MHz at 40k+3) 13/16  best r=1 12/16  dead=0  istd med 26
+blk 6d reg 5 bit3 18->10: marker(+3MHz at 40k+3) 12/16  best r=1 10/16  dead=0  istd med 31
+blk 6d reg 5 bit4 18->08: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 32
+blk 6d reg 5 bit5 18->38: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 34
+blk 6d reg 5 bit6 18->58: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 29
+blk 6d reg 5 bit7 18->98: marker(+3MHz at 40k+3) 14/16  best r=1 12/16  dead=0  istd med 32
+blk 6d reg 6 bit0 9b->9a: marker(+3MHz at 40k+3) 14/16  best r=1 10/16  dead=0  istd med 31
+blk 6d reg 6 bit1 9b->99: marker(+3MHz at 40k+3) 12/16  best r=1 12/16  dead=0  istd med 33
+blk 6d reg 6 bit2 9b->9f: marker(+3MHz at 40k+3) 13/16  best r=1 13/16  dead=0  istd med 30
+blk 6d reg 6 bit3 9b->93: marker(+3MHz at 40k+3) 13/16  best r=1 10/16  dead=0  istd med 38
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 32, in <module>
+    cur = rdreg(reg)
+          ^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 20, in rdreg
+    return int(m[-1].split("=")[-1], 16)
+               ~^^^^
+IndexError: list index out of range
+--- block 0x64 regs 0-10 2026年 10月18日 日曜日 11時58分08秒 JST
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 27, in <module>
+    rxprobe.cmd(s, "TUNE 2437000"); base = rdreg(reg)
+                                           ^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 20, in rdreg
+    return int(m[-1].split("=")[-1], 16)
+               ~^^^^
+IndexError: list index out of range
+--- block 0x61 regs 0-8 2026年 10月18日 日曜日 11時58分08秒 JST
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 27, in <module>
+    rxprobe.cmd(s, "TUNE 2437000"); base = rdreg(reg)
+                                           ^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 20, in rdreg
+    return int(m[-1].split("=")[-1], 16)
+               ~^^^^
+IndexError: list index out of range
+--- block 0x6a regs 0-7 2026年 10月18日 日曜日 11時58分08秒 JST
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 27, in <module>
+    rxprobe.cmd(s, "TUNE 2437000"); base = rdreg(reg)
+                                           ^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 20, in rdreg
+    return int(m[-1].split("=")[-1], 16)
+               ~^^^^
+IndexError: list index out of range
+--- block 0x66 regs 0-10 2026年 10月18日 日曜日 11時58分09秒 JST
+Traceback (most recent call last):
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 27, in <module>
+    rxprobe.cmd(s, "TUNE 2437000"); base = rdreg(reg)
+                                           ^^^^^^^^^^
+  File "/Users/a/Documents/fun/pg/lh/esp32_isdb/host/analog_flip_scan.py", line 20, in rdreg
+    return int(m[-1].split("=")[-1], 16)
+               ~^^^^
+IndexError: list index out of range
+### CHAIN DONE 2026年 10月18日 日曜日 11時58分09秒 JST

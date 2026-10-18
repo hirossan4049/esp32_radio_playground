@@ -15,9 +15,22 @@ s = rxprobe.open_port(rxprobe.PORT)
 plls = list(range(a.start, a.stop + 1, a.step))
 ratios = sorted({Fraction(p, q) for q in range(1, 13) for p in range(1, 2 * q) if Fraction(1, 10) <= Fraction(p, q) <= Fraction(13, 10)})
 
+# Blocks that hold power/clock settings are never scanned: 0x61 (ULP/brownout bias), 0x66 (BBPLL = CPU/ADC clock),
+# 0x69 (digital LDO/SAR), 0x6d (I2C_DIG_REG = core/RTC voltage regulators; flipping reg 6 bit 4 crash-looped the chip, RX-C3-019).
+FORBIDDEN = {0x61, 0x66, 0x69, 0x6d}
+if blk in FORBIDDEN: sys.exit(f"block 0x{blk:02x} is a power/clock block; refusing to flip it")
+
+def alive():
+    rep = rxprobe.cmd(s, "INFO", wait=1.0)
+    return "RXPROBE" in rep
+
 def rdreg(r):
-    rep = rxprobe.cmd(s, f"I2C {blk:x} {r}", wait=0.5); m = [l for l in rep.splitlines() if l.startswith("I2C")]
-    return int(m[-1].split("=")[-1], 16)
+    for attempt in range(3):
+        rep = rxprobe.cmd(s, f"I2C {blk:x} {r}", wait=0.5); m = [l for l in rep.splitlines() if l.startswith("I2C")]
+        if m: return int(m[-1].split("=")[-1], 16)
+        reset()
+        if not alive(): sys.exit("board does not answer after reset (crash loop?); aborting scan")
+    sys.exit("I2C read keeps failing; aborting scan")
 
 def reset():
     s.dtr = False; s.rts = True; time.sleep(0.1); s.rts = False; time.sleep(3); s.reset_input_buffer()
