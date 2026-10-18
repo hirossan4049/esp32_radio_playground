@@ -100,8 +100,31 @@ const $ = id => document.getElementById(id);
 const log = (m, cls) => { const el = $("log"), d = document.createElement("div"); if (cls) d.className = cls; d.textContent = new Date().toLocaleTimeString() + "  " + m; el.appendChild(d); el.scrollTop = el.scrollHeight; };
 const enc = new TextEncoder(), dec = new TextDecoder();
 async function send(line) { await writer.write(enc.encode(line + "\n")); }
-async function cmdWait(line, pattern, ms = 1500) { textBuf = ""; await send(line); const t0 = performance.now(); while (performance.now() - t0 < ms) { if (textBuf.includes(pattern)) return textBuf; await new Promise(r => setTimeout(r, 15)); } throw new Error(`応答なし: ${line}`); }
-async function startPump() { reader = port.readable.getReader(); (async () => { try { for (;;) { const { value, done } = await reader.read(); if (done) break; if (value) onBytes(value); } } catch (e) { log("read error: " + e.message, "warn"); } })(); }
+async function cmdWait(line, pattern, ms = 1500) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    binMode = false; textBuf = ""; await send(line); const t0 = performance.now();
+    while (performance.now() - t0 < ms) { if (textBuf.includes(pattern)) return textBuf; await new Promise(r => setTimeout(r, 15)); }
+    await writer.write(enc.encode("x\n"));            // in case a stream was still running, stop it and retry once
+    await new Promise(r => setTimeout(r, 400));
+  }
+  throw new Error(`応答なし: ${line}`);
+}
+let pumpAlive = false;
+async function startPump() {
+  // WebSerial reports line conditions (break, framing, parity, buffer overrun) as non-fatal errors that end the current
+  // reader; the port stays open, so take a new reader and keep going. Only a closed port ends the loop.
+  (async () => {
+    pumpAlive = true;
+    while (port && port.readable) {
+      reader = port.readable.getReader();
+      try { for (;;) { const { value, done } = await reader.read(); if (done) break; if (value) onBytes(value); } }
+      catch (e) { log("受信エラー (継続します): " + e.message, "warn"); }
+      finally { try { reader.releaseLock(); } catch (_) {} }
+      await new Promise(r => setTimeout(r, 20));
+    }
+    pumpAlive = false; log("シリアルポートが閉じました。再接続してください。", "warn"); $("st").textContent = "切断";
+  })();
+}
 $("connect").onclick = async () => {
   if (!("serial" in navigator)) { log("このブラウザは WebSerial 非対応です。Chrome / Edge で開いてください。", "warn"); return; }
   try { port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x303a }] }); await port.open({ baudRate: 115200 }); writer = port.writable.getWriter(); await startPump();
@@ -136,7 +159,13 @@ function onBytes(chunk) {
 }
 function indexOfMagic(a) { for (let i = 0; i + 3 < a.length; i++) if (a[i] === 69 && a[i + 1] === 83 && a[i + 2] === 80 && a[i + 3] === 66) return i; return -1; }
 function endOfStream(line) { binMode = false; if (onEnd) { const f = onEnd; onEnd = null; f(line); } }
-async function stopStream() { if (!binMode) return; await writer.write(enc.encode("x")); await new Promise(r => setTimeout(r, 300)); binMode = false; }
+async function stopStream() {
+  if (!binMode) return;
+  let ended = false; const prev = onEnd; onEnd = () => { ended = true; if (prev) prev(); };
+  await writer.write(enc.encode("x"));
+  const t0 = performance.now(); while (!ended && performance.now() - t0 < 1500) await new Promise(r => setTimeout(r, 30));
+  binMode = false; onEnd = null;
+}
 // ---------- live view state ----------
 let fs = 250000, lo = 2437e6, nfft = 1024, re, im, win, avg = null, hold = null, vmin = 0, vmax = 60, bleChannel = null;
 const spec = $("spec"), wf = $("wf"), bandbar = $("bandbar"), ov = $("ov");
@@ -235,7 +264,8 @@ $("scan").onclick = async () => {
   const nf = 1024, r2 = new Float32Array(nf), i2 = new Float32Array(nf), w2 = Float32Array.from({ length: nf }, (_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (nf - 1)));
   try {
     for (let L = lo0; L <= lo1; L += step) {
-      await setupRadio(L * 1e6, gain); let got = null;
+      try { await setupRadio(L * 1e6, gain); } catch (e) { log(`スキャン ${L} MHz: ${e.message}（飛ばします）`, "warn"); continue; }
+      let got = null;
       await new Promise(async (resolve) => { bin = new Uint8Array(0); frameSink = (seq, tus, nsamp, fmt, flags, payload) => { if (!got && nsamp) got = DSP.psd(...Object.values(DSP.unpack(payload, fmt)), nf, w2, r2, i2); }; onEnd = () => resolve(); binMode = true; await send(`STREAM2 bfff 16384 1 0 250 0`); setTimeout(resolve, 2500); });
       if (!got) continue;
       const fl = DSP.median(got); for (let i = 0; i < nf; i++) { const bb = (i / nf - 0.5) * 39.97; if (Math.abs(bb) > 10) continue; const rf = Math.round(L - bb); const v = got[i] - fl; const cur = bins.get(rf); bins.set(rf, cur === undefined ? v : Math.min(cur, v)); }
