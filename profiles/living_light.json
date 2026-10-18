@@ -499,5 +499,9 @@
   "8690": "電球色",
   "8608": "全灯"
  },
- "note": "byte30 low 2 bits are a packet sequence; mask with 0xFC for the parameter. 全灯 uses sub-format e5 43 ff fc at bytes 24-27."
+ "note": "byte30 low 2 bits are a packet sequence; mask with 0xFC for the parameter. 全灯 uses sub-format e5 43 ff fc at bytes 24-27.",
+ "cmd_mask": [
+  255,
+  252
+ ]
 }

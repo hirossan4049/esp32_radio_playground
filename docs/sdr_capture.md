@@ -74,3 +74,10 @@ int8 I/Q には −1,0,0 が頻出するため、ブラウザ用フレームは 
 - `readStream()` は 1 ブロック = 1 バースト: `SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST` を立て、`timeNs` に t_us 由来の時刻を入れる。ブロック間はサンプルを返さない（ゼロ埋めしない）。
 - 欠落をゼロ埋めして連続に見せるオプションは、復調器が連続データと誤認するため提供しない。必要なら受信側で `END_BURST` を見て明示的に行う。
 - 周波数・ゲイン・レートの setter は `esp32sdr.device` の `tune/set_gain/plan_rate` と同じ制約（1836〜2803 MHz、離散レート）。
+
+## 受信レポート（host/report.py）
+任意の SigMF キャプチャから、受信条件・品質指標・スペクトル/ウォーターフォール・検出信号・復号結果（BLE 広告、学習済みリモコン）を 1 枚の自己完結 HTML にまとめる。外部アセットなし（画像は埋め込み）。受信専用。
+```
+python3 host/report.py captures/web/remote_seq4.sigmf-meta --open
+```
+検出信号はバンド表（host/bands.py, web/dsp.js と共通）で命名・分類し、出現率（検出ブロック割合）と信頼度を付す。リモコンは profiles/*.json に一致すればボタン名付きで押下を一覧する。
