@@ -40,3 +40,12 @@
   control_result: 2437 -> bursts on the 102.4 ms TBTT grid (118/118 events with a +102.4 ms partner at gain 20); 2300 and 2600 -> 0 bursts
   result: 7/16 raw blocks decode with PLCP CRC OK; beacon FC 0x0080, A2=A3=f2:c9:4e:24:c7:1a, SSID LOCALHOUSE_SPACE, DS ch 6, seq 1,2,3,5 consecutive
   interpretation: verified; the dump engine I/Q is the downconverted external RF (frequency, period and content all match an independent reference)
+- experiment_id: RX-C3-016
+  title: Dump-engine characterisation with beacons and internal spurs as test signals
+  date: 2026-10-18
+  soc: ESP32-C3 rev v0.4
+  rx_method: BURST series (gain 0..60), BURST catch at 80 MS/s and at LO 2432/2442, one-shot CAP at 16/80 MS/s with no packet
+  rx_tuning_mhz: [2437, 2432, 2442, 2300]
+  capture_path: captures/gs_2437_g*.json, captures/bc80_*, captures/bc_2432_*, captures/bc_2442_*, captures/m16_*, captures/m80_*, logs/RX-C3-016_mech_analysis.txt
+  result: fs = 16.000 MS/s (beacon clock); analog bandwidth +-10..11 MHz; 16 MS/s mode aliases the -11 MHz spur to +5 MHz (no anti-alias filter); image >= 19 dB down; DC (-1,-8) LSB at 2437; noise rms I 2.7 Q 1.8; gain ~1 dB/step with a ~10 dB step at 25->30; bit17 not a packet trigger
+  interpretation: verified; the engine delivers raw 10-bit analog-filtered I/Q at 80 MS/s, 16 MS/s is a plain 1/5 decimation
