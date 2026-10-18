@@ -114,3 +114,9 @@
   capture_path: captures/web/remote_seq1.sigmf-* (not in git), host/remote_events.py
   result: activity only at 10-20, 25-40, 45-60 s (nothing after 60 s); 90 complete packets; variant 6DBF bytes 22-28 differ from the previous session (18 42/46/86 e5 40 00 00 01 vs 18 a2 e5 42 e5 42 05), byte 29 is a counter (+4 per ~1.3 s, continues across presses, 0x98..0xf8), bytes 30-36 change with it; 4086 variant fully varying
   interpretation: no stable plaintext button code; payload appears whitened/encrypted with the counter; identification needs the device model or more structured presses
+- experiment_id: RX-C3-027
+  title: Lighting remote, repeated single-button recordings (4 MS/s event mode)
+  date: 2026-10-18
+  capture_path: captures/web/remote_seq3.sigmf-*, remote_seq4.sigmf-* (not in git), host/lightremote.py
+  result: byte 23 = command class (0x42 on, 0x46 off, 0x86 adjust) stable across sessions; byte 30 = parameter (a1/a2 brightness up, 60 brightness down, 90-93 daylight); byte 29 counter +4 per ~1.5 s; bytes 31-36 counter-derived; byte 39 check (unknown)
+  interpretation: proprietary 2.4 GHz lighting remote, plaintext fields identified for on/off/adjust; derived-value generator and check byte still unknown

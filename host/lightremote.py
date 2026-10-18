@@ -4,11 +4,11 @@
 Known layout of the "6DBF" packet type (after the sync word):
   [0..21]  fixed (device ID / header; starts cf bd 6d bf)
   [22]     0x18
-  [23]     code byte: 0x42 = 点灯, 0x46 = 消灯 (seen once), 0x86 = 明るさ↑ ; same value in two sessions
+  [23]     command class: 0x42 = 点灯, 0x46 = 消灯, 0x86 = 調整 (明るさ↑/↓, 昼光色 ...); same values across sessions
   [24..27] e5 40 00 00
   [28]     session byte (0x01 in one session, 0x02 in the next)
   [29]     counter, +4 every ~1.5 s while transmitting, continues across presses
-  [30]     state byte (00/02/03 with 点灯, a1/a2 with 明るさ↑)
+  [30]     parameter byte: 00/02/03 with 点灯/消灯, a1/a2 with 明るさ↑, 60 with 明るさ↓, 90..93 with 昼光色
   [31..36] change with every counter step (derived values; generator unknown)
   [37..38] 4d c8..cb
   [39]     check byte (algorithm unknown)
@@ -22,11 +22,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from esp32sdr.sigmf import read_sigmf
 import pkt
 
-CODES = {0x42: "点灯", 0x46: "消灯", 0x86: "明るさ↑"}
+CODES = {0x42: "点灯", 0x46: "消灯", 0x86: "調整"}   # 0x86 covers 明るさ↑/↓ and 昼光色; byte 30 then carries the parameter (a1/a2 up, 60 down, 90..93 daylight)
 SYNC = f"{0xadf645c7:032b}"
 
-def packets(path):
-    meta, blocks = read_sigmf(path); fs = meta["global"]["core:sample_rate"]; T0 = blocks[0][0]; thr = pkt.auto_thr(blocks); out = []
+def packets(path, thr=0):
+    meta, blocks = read_sigmf(path); fs = meta["global"]["core:sample_rate"]; T0 = blocks[0][0]; thr = thr or pkt.auto_thr(blocks); out = []
     for tt, x in blocks:
         for s0, s1 in pkt.bursts_of(x, fs, thr, 150):
             seg = x[max(0, s0 - 64):s1 + 64]; best = None
@@ -37,9 +37,9 @@ def packets(path):
     return sorted(out)
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("files", nargs="+"); ap.add_argument("--all", action="store_true"); a = ap.parse_args()
+    ap = argparse.ArgumentParser(); ap.add_argument("files", nargs="+"); ap.add_argument("--all", action="store_true"); ap.add_argument("--thr", type=float, default=0); a = ap.parse_args()
     for f in a.files:
-        pk = packets(f); b = [(t, by) for t, by in pk if by[2:4] == b"\x6d\xbf"]
+        pk = packets(f, a.thr); b = [(t, by) for t, by in pk if by[2:4] == b"\x6d\xbf"]
         print(f"{f}: {len(pk)} packets ({len(b)} of type 6DBF)")
         last = None; presses = []
         for t, by in b:

@@ -26,8 +26,9 @@ def bursts_of(x, fs, thr, minlen_us):
 
 def auto_thr(blocks):
     """3x the quiet level: 20th percentile of per-block mean |x| (works for int8 and 10-bit scales)."""
-    m = np.array([np.abs(x).mean() for _, x in blocks if len(x) >= 64])
-    return float(np.percentile(m, 20) * 3) if len(m) else 18.0
+    m = np.array([np.abs(x).mean() for _, x in blocks if len(x) >= 64]); pk = np.array([np.abs(x).max() for _, x in blocks if len(x) >= 64])
+    if not len(m): return 18.0
+    return float(min(np.percentile(m, 20) * 3, np.median(pk) * 0.3))      # event-mode files hold only energetic blocks: cap by the burst peak
 
 def bitstreams(seg, fs, rate, conj=True):
     """Yield (phase, bits) for every symbol phase; bits are hard decisions after CFO removal."""
