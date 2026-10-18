@@ -1,0 +1,76 @@
+captures/bc_2437_g20_blk00.bin
+  peak |I|,|Q| 273  mean |x| 16
+  samples 16384  symbols 1023  timing peakiness 6.0  cfo +29847 Hz (per 1 us symbol)  median |corr| 216  p90 233
+  samples 16384  symbols 1023  timing peakiness 6.0  cfo -29847 Hz (per 1 us symbol)  median |corr| 216  p90 233
+captures/bc_2437_g20_blk01.bin
+  peak |I|,|Q| 273  mean |x| 16
+  samples 16384  symbols 1023  timing peakiness 6.6  cfo +29874 Hz (per 1 us symbol)  median |corr| 240  p90 254
+  samples 16384  symbols 1023  timing peakiness 6.6  cfo -29874 Hz (per 1 us symbol)  median |corr| 240  p90 254
+captures/bc_2437_g20_blk02.bin
+  peak |I|,|Q| 273  mean |x| 16
+  samples 16384  symbols 1023  timing peakiness 7.3  cfo +29173 Hz (per 1 us symbol)  median |corr| 237  p90 249
+  samples 16384  symbols 1023  timing peakiness 7.3  cfo -29173 Hz (per 1 us symbol)  median |corr| 237  p90 249
+captures/bc_2437_g20_blk03.bin
+  peak |I|,|Q| 273  mean |x| 16
+  samples 16384  symbols 1023  timing peakiness 6.8  cfo +29975 Hz (per 1 us symbol)  median |corr| 234  p90 247
+  samples 16384  symbols 1023  timing peakiness 6.8  cfo -29975 Hz (per 1 us symbol)  median |corr| 234  p90 247
+captures/bc_2437_g20_blk04.bin
+  peak |I|,|Q| 273  mean |x| 16
+  samples 16384  symbols 1023  timing peakiness 7.7  cfo +29786 Hz (per 1 us symbol)  median |corr| 237  p90 249
+  samples 16384  symbols 1023  timing peakiness 7.7  cfo -29786 Hz (per 1 us symbol)  median |corr| 237  p90 249
+captures/bc_2437_g20_blk05.bin
+  peak |I|,|Q| 273  mean |x| 15
+  samples 16384  symbols 1023  timing peakiness 5.7  cfo +29492 Hz (per 1 us symbol)  median |corr| 61  p90 77
+   long SFD at symbol 295  SIGNAL=0x0a SERVICE=0x04 LENGTH=2992 us  CRC OK  sync soft 0.99
+    FC=0x0080 type=0 subtype=8 dur=0 A1=ff:ff:ff:ff:ff:ff A2=f2:c9:4e:24:c7:1a A3=f2:c9:4e:24:c7:1a seq=1
+    SSID(16)='LOCALHOUSE_SPACE'
+captures/bc_2437_g20_blk06.bin
+  peak |I|,|Q| 273  mean |x| 16
+  samples 16384  symbols 1023  timing peakiness 7.0  cfo +29115 Hz (per 1 us symbol)  median |corr| 231  p90 244
+  samples 16384  symbols 1023  timing peakiness 7.0  cfo -29115 Hz (per 1 us symbol)  median |corr| 231  p90 244
+captures/bc_2437_g20_blk07.bin
+  peak |I|,|Q| 273  mean |x| 16
+  samples 16384  symbols 1023  timing peakiness 5.8  cfo +29818 Hz (per 1 us symbol)  median |corr| 233  p90 247
+  samples 16384  symbols 1023  timing peakiness 5.8  cfo -29818 Hz (per 1 us symbol)  median |corr| 233  p90 247
+captures/bc_2437_g30_blk00.bin
+  peak |I|,|Q| 273  mean |x| 84
+  samples 16384  symbols 1023  timing peakiness 6.7  cfo +28729 Hz (per 1 us symbol)  median |corr| 1212  p90 1285
+  samples 16384  symbols 1023  timing peakiness 6.7  cfo -28729 Hz (per 1 us symbol)  median |corr| 1212  p90 1285
+captures/bc_2437_g30_blk01.bin
+  peak |I|,|Q| 273  mean |x| 71
+  samples 16384  symbols 1023  timing peakiness 5.9  cfo +30296 Hz (per 1 us symbol)  median |corr| 1141  p90 1252
+   long SFD at symbol 275  SIGNAL=0x0a SERVICE=0x04 LENGTH=2992 us  CRC OK  sync soft 1.00
+    FC=0x0080 type=0 subtype=8 dur=0 A1=ff:ff:ff:ff:ff:ff A2=f2:c9:4e:24:c7:1a A3=f2:c9:4e:24:c7:1a seq=15
+    SSID(16)='LOCALHOUSE_SPACE'
+captures/bc_2437_g30_blk02.bin
+  peak |I|,|Q| 273  mean |x| 38
+  samples 16384  symbols 1023  timing peakiness 5.7  cfo +29282 Hz (per 1 us symbol)  median |corr| 12  p90 383
+   long SFD at symbol 748  SIGNAL=0x0a SERVICE=0x04 LENGTH=2992 us  CRC OK  sync soft 1.00
+    FC=0x0080 type=0 subtype=8 dur=0 A1=ff:ff:ff:ff:ff:ff A2=6a:64:27:92:3b:1b A3=f2:c9:4e:24:c7:1a seq=0
+captures/bc_2437_g30_blk03.bin
+  peak |I|,|Q| 273  mean |x| 70
+  samples 16384  symbols 1023  timing peakiness 7.9  cfo +29226 Hz (per 1 us symbol)  median |corr| 1298  p90 1362
+   long SFD at symbol 299  SIGNAL=0x0a SERVICE=0x04 LENGTH=2992 us  CRC OK  sync soft 1.00
+    FC=0x0080 type=0 subtype=8 dur=0 A1=ff:ff:ff:ff:ff:ff A2=f2:c9:4e:24:c7:1a A3=f2:c9:4e:24:c7:1a seq=1
+    SSID(16)='LOCALHOUSE_SPACE'
+captures/bc_2437_g30_blk04.bin
+  peak |I|,|Q| 273  mean |x| 66
+  samples 16384  symbols 1023  timing peakiness 5.9  cfo +29670 Hz (per 1 us symbol)  median |corr| 1096  p90 1210
+   long SFD at symbol 343  SIGNAL=0x0a SERVICE=0x04 LENGTH=2992 us  CRC OK  sync soft 1.00
+    FC=0x0080 type=0 subtype=8 dur=0 A1=ff:ff:ff:ff:ff:ff A2=f2:c9:4e:24:c7:1a A3=f2:c9:4e:24:c7:1a seq=2
+    SSID(16)='LOCALHOUSE_SPACE'
+captures/bc_2437_g30_blk05.bin
+  peak |I|,|Q| 273  mean |x| 37
+  samples 16384  symbols 1023  timing peakiness 6.7  cfo +29105 Hz (per 1 us symbol)  median |corr| 12  p90 1280
+   long SFD at symbol 761  SIGNAL=0x0a SERVICE=0x04 LENGTH=2992 us  CRC OK  sync soft 1.00
+    FC=0x0080 type=0 subtype=8 dur=0 A1=ff:ff:ff:ff:ff:ff A2=f2:c9:4e:24:c7:1a A3=f2:c9:4e:24:c7:1a seq=3
+captures/bc_2437_g30_blk06.bin
+  peak |I|,|Q| 273  mean |x| 81
+  samples 16384  symbols 1023  timing peakiness 7.0  cfo +29687 Hz (per 1 us symbol)  median |corr| 1288  p90 1341
+  samples 16384  symbols 1023  timing peakiness 7.0  cfo -29687 Hz (per 1 us symbol)  median |corr| 1288  p90 1341
+captures/bc_2437_g30_blk07.bin
+  peak |I|,|Q| 273  mean |x| 82
+  samples 16384  symbols 1023  timing peakiness 6.1  cfo +29289 Hz (per 1 us symbol)  median |corr| 1163  p90 1230
+   long SFD at symbol 68  SIGNAL=0x0a SERVICE=0x04 LENGTH=2992 us  CRC OK  sync soft 1.00
+    FC=0x0080 type=0 subtype=8 dur=0 A1=ff:ff:ff:ff:ff:ff A2=f2:c9:4e:24:c7:1a A3=f2:c9:4e:24:c7:1a seq=5
+    SSID(16)='LOCALHOUSE_SPACE'

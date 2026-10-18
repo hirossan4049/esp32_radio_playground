@@ -29,3 +29,14 @@
   capture_path: captures/cs2_*.bin, captures/us2_2437_d64.bin
   control_result: valid data; gap 79960-81268 cycles (0.50 ms) per 1.024 ms block; 67% coverage; USB effective 164 kS/s at decim 64
   interpretation: maximum contiguous span 1.024 ms at 16 MS/s; insufficient for ISDB-T mode 3 symbol timing
+- experiment_id: RX-C3-015
+  title: External RF reception confirmed by host-side DSSS decode of Wi-Fi beacons
+  date: 2026-10-18
+  soc: ESP32-C3 rev v0.4
+  rx_method: wifi_rf_iq_dump 16 Msps, BURST 1.024 ms blocks at 1.50 ms pitch, forced gain 20/30/40
+  rf_input_mhz: 2437 (ambient AP beacons; reference = chip MAC promiscuous counts, BSSID f2:c9:4e:24:c7:1a SSID LOCALHOUSE_SPACE -41 dBm)
+  rx_tuning_mhz: [2437, 2300, 2600, 2437]
+  capture_path: captures/b_*.json, captures/bc_2437_g20_blk*.bin, captures/bc_2437_g30_blk*.bin, logs/RX-C3-015_dsss_decode.txt
+  control_result: 2437 -> bursts on the 102.4 ms TBTT grid (118/118 events with a +102.4 ms partner at gain 20); 2300 and 2600 -> 0 bursts
+  result: 7/16 raw blocks decode with PLCP CRC OK; beacon FC 0x0080, A2=A3=f2:c9:4e:24:c7:1a, SSID LOCALHOUSE_SPACE, DS ch 6, seq 1,2,3,5 consecutive
+  interpretation: verified; the dump engine I/Q is the downconverted external RF (frequency, period and content all match an independent reference)

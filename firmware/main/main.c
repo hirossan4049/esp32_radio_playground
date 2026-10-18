@@ -616,6 +616,139 @@ static void cstream2(uint32_t nwords, uint32_t decim, uint32_t nout, uint32_t sh
     free(copy);
 }
 
+/* ---- burst capture and Wi-Fi MAC reference ------------------------------------ */
+
+/* BURST: repeat one-shot captures of nwords (16 MS/s unless ctrl says otherwise), compute the
+ * block's mean |I|+|Q| and peak |I|,|Q| from the idle bank, keep a time series of every block,
+ * and send the raw words of blocks whose mean exceeds thr (up to maxsend). The series lets the
+ * host look for the 102.4 ms beacon period; the raw blocks let it demodulate the DSSS PLCP. */
+typedef struct { uint32_t t_us; uint16_t mean; uint16_t peak; uint8_t sent; uint8_t pad[3]; uint32_t c_wait, c_pow; } burst_rec_t;
+
+static void burst(uint32_t ctrl, uint32_t nwords, uint32_t thr, uint32_t maxsend, uint32_t total_ms)
+{
+    if (nwords == 0 || nwords > DUMP_BANK_WORDS) nwords = DUMP_BANK_WORDS;
+    uint32_t maxrec = 3500;
+    burst_rec_t *rec = heap_caps_malloc(maxrec * sizeof *rec, MALLOC_CAP_8BIT);
+    if (!rec) { say("ERR BURST malloc\r\n"); return; }
+    const uint32_t owner0 = rd(SRAM_OWNER);
+    const uint32_t own_run = (owner0 & ~7u) | 2u | own_bit3;
+    uint32_t nrec = 0, nsent = 0, nfail = 0;
+    int64_t t_end = esp_timer_get_time() + (int64_t)total_ms * 1000;
+    say("BURST start ctrl=%08" PRIx32 " nwords=%" PRIu32 " thr=%" PRIu32 " maxsend=%" PRIu32 " ms=%" PRIu32 " tuned=%" PRIu32 "\r\n",
+        ctrl, nwords, thr, maxsend, total_ms, tuned_khz);
+    while (esp_timer_get_time() < t_end && nrec < maxrec) {
+        wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+        wr(SRAM_OWNER, own_run);
+        __asm__ volatile("fence rw,rw" ::: "memory");
+        uint32_t t_us = (uint32_t)esp_timer_get_time();
+        uint32_t c0 = esp_cpu_get_cycle_count();
+        dump_start((ctrl & ~0x3FFFu) | (nwords - 1));
+        bool done = false;
+        for (uint32_t i = 0; i < 2000000; i++) { if (rd(DUMP_CTRL) & (1u << 18)) { done = true; break; } }
+        uint32_t c1 = esp_cpu_get_cycle_count();
+        wr(DUMP_CTRL, rd(DUMP_CTRL) & ~(1u << 31));
+        __asm__ volatile("fence rw,rw" ::: "memory");
+        wr(SRAM_OWNER, owner0);
+        __asm__ volatile("fence rw,rw" ::: "memory");
+        if (!done) { nfail++; continue; }
+        uint32_t acc = 0, peak = 0;
+        portDISABLE_INTERRUPTS();
+        const uint32_t *bp = (const uint32_t *)DUMP_BANK;
+        /* every 4th word is enough for the detector (the compute, ~18 instructions per word, is the bottleneck) */
+        for (uint32_t i = 0; i < nwords; i += 16) {
+            uint32_t w0 = bp[i] ^ 0x00080200u, w1 = bp[i + 4] ^ 0x00080200u, w2 = bp[i + 8] ^ 0x00080200u, w3 = bp[i + 12] ^ 0x00080200u;
+#define ABSACC(w) do { int32_t iv_ = (int32_t)((w) & 0x3FFu) - 512, qv_ = (int32_t)(((w) >> 10) & 0x3FFu) - 512; \
+            uint32_t ai_ = (uint32_t)(iv_ ^ (iv_ >> 31)) - (uint32_t)(iv_ >> 31), aq_ = (uint32_t)(qv_ ^ (qv_ >> 31)) - (uint32_t)(qv_ >> 31); \
+            acc += ai_ + aq_; peak |= ai_ | aq_; } while (0)
+            ABSACC(w0); ABSACC(w1); ABSACC(w2); ABSACC(w3);
+#undef ABSACC
+        }
+        portENABLE_INTERRUPTS();
+        /* peak here is the OR of magnitudes: >= 512 means at least one sample hit full scale (bit 9), 256..511 means >= half scale */
+        uint32_t mean = acc / (nwords / 4);
+        burst_rec_t *r = &rec[nrec++];
+        r->t_us = t_us; r->mean = (uint16_t)mean; r->peak = (uint16_t)peak; r->sent = 0;
+        r->c_wait = c1 - c0; r->c_pow = esp_cpu_get_cycle_count() - c1;
+        if (mean > thr && nsent < maxsend) {
+            r->sent = 1; nsent++;
+            say("CAP burst=1 idx=%" PRIu32 " t_us=%" PRIu32 " mean=%" PRIu32 " peak=%" PRIu32 " ctrl=%08" PRIx32 " n=%" PRIu32 " tuned=%" PRIu32 "\r\n",
+                nrec - 1, t_us, mean, peak, ctrl, nwords, tuned_khz);
+            uint32_t hdr[2] = {0x43415031u, nwords};
+            usb_write(hdr, sizeof hdr);
+            usb_write((const void *)DUMP_BANK, nwords * 4);
+            say("\r\nEND\r\n");
+        }
+    }
+    say("BURST done nrec=%" PRIu32 " nsent=%" PRIu32 " nfail=%" PRIu32 "\r\n", nrec, nsent, nfail);
+    for (uint32_t i = 0; i < nrec; i++)
+        say("S %" PRIu32 " %" PRIu32 " %u %u %u %" PRIu32 " %" PRIu32 "\r\n", i, rec[i].t_us, rec[i].mean, rec[i].peak, rec[i].sent, rec[i].c_wait, rec[i].c_pow);
+    say("END BURST\r\n");
+    free(rec);
+}
+
+/* WIFICNT: let the chip's own Wi-Fi MAC (promiscuous mode) count frames for a while and report
+ * the beacons it decoded: BSSID, SSID, RSSI, count. Independent demodulation path used as the
+ * reference for the host-side DSSS decode of the raw I/Q. */
+typedef struct { uint8_t bssid[6]; char ssid[33]; int rssi; uint32_t count; uint32_t last_us; uint32_t prev_us; } ap_rec_t;
+static ap_rec_t aps[16];
+static volatile uint32_t cnt_mgmt, cnt_ctrl, cnt_data, cnt_misc, cnt_beacon, cnt_probe_req;
+static volatile uint32_t last_probe_us; static uint8_t last_probe_sa[6];
+
+static void promisc_cb(void *buf, wifi_promiscuous_pkt_type_t type)
+{
+    if (type == WIFI_PKT_CTRL) { cnt_ctrl++; return; }
+    if (type == WIFI_PKT_DATA) { cnt_data++; return; }
+    if (type == WIFI_PKT_MISC) { cnt_misc++; return; }
+    cnt_mgmt++;
+    const wifi_promiscuous_pkt_t *p = buf;
+    const uint8_t *f = p->payload;
+    if (p->rx_ctrl.sig_len < 36) return;
+    uint8_t subtype = (f[0] >> 4) & 0xF;
+    uint32_t now = (uint32_t)esp_timer_get_time();
+    if (subtype == 4) { cnt_probe_req++; last_probe_us = now; memcpy(last_probe_sa, f + 10, 6); return; }
+    if (subtype != 8) return;
+    cnt_beacon++;
+    const uint8_t *bssid = f + 16;
+    int slot = -1;
+    for (int i = 0; i < 16; i++) {
+        if (aps[i].count && !memcmp(aps[i].bssid, bssid, 6)) { slot = i; break; }
+        if (!aps[i].count && slot < 0) slot = i;
+    }
+    if (slot < 0) return;
+    ap_rec_t *a = &aps[slot];
+    if (!a->count) {
+        memcpy(a->bssid, bssid, 6);
+        /* IEs start at 24 (header) + 12 (timestamp, interval, capability) */
+        const uint8_t *ie = f + 36; int rem = p->rx_ctrl.sig_len - 36 - 4;
+        a->ssid[0] = 0;
+        if (rem >= 2 && ie[0] == 0) { int l = ie[1] > 32 ? 32 : ie[1]; if (l <= rem - 2) { memcpy(a->ssid, ie + 2, l); a->ssid[l] = 0; } }
+    }
+    a->count++; a->rssi = p->rx_ctrl.rssi; a->prev_us = a->last_us; a->last_us = now;
+}
+
+static void wificnt(uint32_t ms, bool normal_rx)
+{
+    memset(aps, 0, sizeof aps);
+    cnt_mgmt = cnt_ctrl = cnt_data = cnt_misc = cnt_beacon = cnt_probe_req = 0;
+    if (normal_rx) {
+        /* hand the RF back to the driver's AGC/channel setup for the reference measurement */
+        uint8_t ch = (uint8_t)((tuned_khz - 2407000u + 2500u) / 5000u); if (ch < 1 || ch > 13) ch = 6;
+        esp_wifi_set_channel(ch, WIFI_SECOND_CHAN_NONE);
+    }
+    esp_wifi_set_promiscuous_rx_cb(promisc_cb);
+    vTaskDelay(pdMS_TO_TICKS(ms));
+    esp_wifi_set_promiscuous_rx_cb(NULL);
+    say("WIFICNT ms=%" PRIu32 " normal=%d mgmt=%" PRIu32 " ctrl=%" PRIu32 " data=%" PRIu32 " misc=%" PRIu32 " beacon=%" PRIu32 " probe_req=%" PRIu32 " tuned=%" PRIu32 " agc=%08" PRIx32 "\r\n",
+        ms, normal_rx, cnt_mgmt, cnt_ctrl, cnt_data, cnt_misc, cnt_beacon, cnt_probe_req, tuned_khz, rd(AGC_FORCE));
+    for (int i = 0; i < 16; i++) if (aps[i].count)
+        say("AP %02x:%02x:%02x:%02x:%02x:%02x rssi=%d count=%" PRIu32 " last_us=%" PRIu32 " dt_us=%" PRIu32 " ssid=\"%s\"\r\n",
+            aps[i].bssid[0], aps[i].bssid[1], aps[i].bssid[2], aps[i].bssid[3], aps[i].bssid[4], aps[i].bssid[5],
+            aps[i].rssi, aps[i].count, aps[i].last_us, aps[i].last_us - aps[i].prev_us, aps[i].ssid);
+    if (cnt_probe_req) say("PROBE last_us=%" PRIu32 " sa=%02x:%02x:%02x:%02x:%02x:%02x\r\n", last_probe_us,
+        last_probe_sa[0], last_probe_sa[1], last_probe_sa[2], last_probe_sa[3], last_probe_sa[4], last_probe_sa[5]);
+    say("END WIFICNT\r\n");
+}
+
 static bool addr_ok(uint32_t a)
 {
     return (a >= 0x60000000u && a < 0x60100000u) || (a >= 0x3FC80000u && a < 0x3FCE0000u);
@@ -701,6 +834,13 @@ static void handle(char *line)
     } else if (!strcmp(cmd, "CSTREAM2")) {
         char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = strsep(&s, " "); char *d = strsep(&s, " "); char *e = s;
         cstream2(a ? strtoul(a, NULL, 16) : 16384u, b ? strtoul(b, NULL, 10) : 16, c ? strtoul(c, NULL, 10) : 0, d ? strtoul(d, NULL, 10) : 4, e && *e == '1');
+    } else if (!strcmp(cmd, "BURST")) {
+        char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = strsep(&s, " "); char *d = strsep(&s, " "); char *e = s;
+        burst(a ? strtoul(a, NULL, 16) : 0x13fffu, b ? strtoul(b, NULL, 10) : 16384u, c ? strtoul(c, NULL, 10) : 0xFFFFFFFFu,
+              d ? strtoul(d, NULL, 10) : 0, e ? strtoul(e, NULL, 10) : 2000);
+    } else if (!strcmp(cmd, "WIFICNT")) {
+        char *a = strsep(&s, " "); char *b = s;
+        wificnt(a ? strtoul(a, NULL, 10) : 2000, b && *b == '1');
     } else if (!strcmp(cmd, "OWN")) {
         say("OWN %08" PRIx32 "\r\n", rd(SRAM_OWNER));
     } else {

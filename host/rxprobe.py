@@ -122,6 +122,7 @@ def main():
         return
     if args.tune: print(cmd(s, f"TUNE {args.tune}"), end="")
     if args.gain is not None: print(cmd(s, f"GAIN {args.gain}"), end="")
+    cmd(s, "WR 60033d90 000c2040")           # byte selector; the Wi-Fi driver leaves it 0
     data, meta = capture(s, int(args.ctrl, 16), args.n, command=("ADCTRIG " + args.adctrig) if args.adctrig else None)
     open(args.out, "wb").write(data)
     meta["port"] = args.port; meta["time"] = time.strftime("%Y-%m-%dT%H:%M:%S")
