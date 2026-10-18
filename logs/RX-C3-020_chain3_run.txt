@@ -1,1 +1,9 @@
 ### health check 2026年 10月18日 日曜日 12時07分24秒 JST
+  raw block captures/health_2437_g30_blk00.bin 24 69692287 73 127
+  raw block captures/health_2437_g30_blk01.bin 25 69758182 36 255
+  raw block captures/health_2437_g30_blk02.bin 75 69897743 76 127
+BURST done nrec=1534 nsent=3 nfail=0
+mean|I|+|Q|: median 12  p90 38  max 104   peak: median 15 max 511  sat(>=500) blocks 2
+   long SFD at symbol 313  SIGNAL=0x0a SERVICE=0x04 LENGTH=2992 us  CRC OK  sync soft 1.00
+    SSID(16)='LOCALHOUSE_SPACE'
+### flip scan 0x64 2026年 10月18日 日曜日 12時07分27秒 JST

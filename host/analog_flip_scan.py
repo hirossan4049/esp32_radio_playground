@@ -17,7 +17,7 @@ ratios = sorted({Fraction(p, q) for q in range(1, 13) for p in range(1, 2 * q) i
 
 # Blocks that hold power/clock settings are never scanned: 0x61 (ULP/brownout bias), 0x66 (BBPLL = CPU/ADC clock),
 # 0x69 (digital LDO/SAR), 0x6d (I2C_DIG_REG = core/RTC voltage regulators; flipping reg 6 bit 4 crash-looped the chip, RX-C3-019).
-FORBIDDEN = {0x61, 0x66, 0x69, 0x6d}
+FORBIDDEN = {0x61, 0x66, 0x69, 0x6a, 0x6d}   # 0x6a = I2C_BIAS (IDF regi2c_bias.h)
 if blk in FORBIDDEN: sys.exit(f"block 0x{blk:02x} is a power/clock block; refusing to flip it")
 
 def alive():
