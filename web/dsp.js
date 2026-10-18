@@ -40,6 +40,13 @@ const DSP = (() => {
     mi /= n; mq /= n; for (let i = 0; i < n; i++) { I[i] -= mi; Q[i] -= mq; }
     return { I, Q };
   }
+  // web frames: unsigned offset-binary bytes (value + 128, never 0xFF) -> Float32 I/Q with DC removed
+  function unpackWeb(payload) {
+    const n = payload.length / 2, I = new Float32Array(n), Q = new Float32Array(n); let mi = 0, mq = 0;
+    for (let i = 0; i < n; i++) { I[i] = payload[2 * i] - 128; Q[i] = payload[2 * i + 1] - 128; mi += I[i]; mq += Q[i]; }
+    mi /= n; mq /= n; for (let i = 0; i < n; i++) { I[i] -= mi; Q[i] -= mq; }
+    return { I, Q };
+  }
   // averaged periodogram, dB, fftshifted (index 0 = -fs/2). Returns Float32Array(nfft)
   function psd(I, Q, nfft, win, re, im) {
     const n = I.length, out = new Float32Array(nfft); let segs = 0;
@@ -133,6 +140,6 @@ const DSP = (() => {
     }
     return hits;
   }
-  return { BANDS, KIND_COLOR, INTERNAL_BB, bandsAt, internalAt, fft, unpack, psd, median, makeFloor, detect, classify, bleDecode };
+  return { BANDS, KIND_COLOR, INTERNAL_BB, bandsAt, internalAt, fft, unpack, unpackWeb, psd, median, makeFloor, detect, classify, bleDecode };
 })();
 if (typeof module !== "undefined") module.exports = DSP;

@@ -771,7 +771,13 @@ static bool stream2_write(const uint8_t *p, uint32_t n, uint32_t deadline_us)
     return true;
 }
 
-static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t shift, uint32_t total_ms, uint32_t thr)
+/* web format (STREAM2 ... web=1): Chrome's WebSerial enables termios PARMRK and treats FF 00 00 in the data as a break
+ * (dropping it) and FF FF as one FF. So frames for the browser never contain 0xFF: magic "ESPW", header fields in 7-bit
+ * groups (seq 5 B, t_us 5 B, nsamp 3 B, fmt 1 B, flags 1 B = 19 B), samples as unsigned offset-binary 0..254
+ * (int8 + 128, or raw 10-bit >> 2 + 128 for the full-rate path), saturated at 254. */
+static void put7(uint8_t *p, uint32_t v, int n) { for (int i = 0; i < n; i++) { p[i] = (uint8_t)(v & 0x7F); v >>= 7; } }
+
+static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t shift, uint32_t total_ms, uint32_t thr, bool web)
 {
     if (nwords < 1024 || nwords > DUMP_BANK_WORDS || decim == 0 || decim > 1024 || (decim > 1 && (decim % 4 || nwords % decim))) { say("ERR STREAM2 args\r\n"); return; }
     const uint32_t ctrl = (ctrl_in & ~0x3FFFu) | (nwords - 1);
@@ -781,7 +787,8 @@ static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t 
      * (CSTREAM2 pattern, ~67% coverage). Full-rate mode: convert from the idle bank and send (USB bound). */
     uint32_t *copy = fmt ? NULL : heap_caps_malloc(nwords * 4, MALLOC_CAP_8BIT | MALLOC_CAP_32BIT);
     if (!fmt && !copy) { say("ERR STREAM2 malloc copy\r\n"); return; }
-    uint8_t *frame = heap_caps_malloc(fmt ? 16 + nwords * 4 : 16 + 64, MALLOC_CAP_8BIT);
+    const uint32_t HDR = web ? 19u : 16u;
+    uint8_t *frame = heap_caps_malloc(fmt ? HDR + nwords * 4 : HDR + 64, MALLOC_CAP_8BIT);
     if (!frame) { say("ERR STREAM2 malloc frame\r\n"); free(copy); return; }
     const uint32_t owner0 = rd(SRAM_OWNER);
     const uint32_t own_run = fmt ? ((owner0 & ~7u) | 2u | own_bit3) : ((owner0 & ~0xFu) | 2u);
@@ -819,22 +826,31 @@ static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t 
             }
             skip = acc / (nwords / 16) < thr;
         }
-        frame[0] = 'E'; frame[1] = 'S'; frame[2] = 'P'; frame[3] = 'B';
-        memcpy(frame + 4, &seq, 4); memcpy(frame + 8, &t_blk, 4);
-        frame[12] = skip ? 0 : (uint8_t)nsamp; frame[13] = skip ? 0 : (uint8_t)(nsamp >> 8); frame[14] = (uint8_t)fmt; frame[15] = (uint8_t)(prev_trunc | (skip ? 2u : 0u));
+        const uint32_t ns = skip ? 0 : nsamp, fl = prev_trunc | (skip ? 2u : 0u);
+        if (web) { frame[0] = 'E'; frame[1] = 'S'; frame[2] = 'P'; frame[3] = 'W'; put7(frame + 4, seq, 5); put7(frame + 9, t_blk, 5); put7(frame + 14, ns, 3); frame[17] = (uint8_t)fmt; frame[18] = (uint8_t)fl; }
+        else { frame[0] = 'E'; frame[1] = 'S'; frame[2] = 'P'; frame[3] = 'B'; memcpy(frame + 4, &seq, 4); memcpy(frame + 8, &t_blk, 4); frame[12] = (uint8_t)ns; frame[13] = (uint8_t)(ns >> 8); frame[14] = (uint8_t)fmt; frame[15] = (uint8_t)fl; }
         bool ok;
         if (skip) {
             wr(SRAM_OWNER, own_run); __asm__ volatile("fence rw,rw" ::: "memory"); t_us = (uint32_t)esp_timer_get_time(); dump_start(ctrl);
-            ok = stream2_write(frame, 16, 2000u); skipped++;
+            ok = stream2_write(frame, HDR, 2000u); skipped++;
         } else if (fmt) {
-            int16_t *o = (int16_t *)(frame + 16);
-            for (uint32_t i = 0; i < nwords; i++) {
-                uint32_t w = bank[i] ^ 0x00080200u;
-                o[2 * i] = (int16_t)((int32_t)(w & 0x3FFu) - 512); o[2 * i + 1] = (int16_t)((int32_t)((w >> 10) & 0x3FFu) - 512);
+            if (web) {
+                uint8_t *o = frame + HDR;
+                for (uint32_t i = 0; i < nwords; i++) {
+                    uint32_t w = bank[i] ^ 0x00080200u;
+                    uint32_t a = (w & 0x3FFu) >> 2, b = ((w >> 10) & 0x3FFu) >> 2;     /* 0..255 offset binary (10-bit >> 2) */
+                    o[2 * i] = (uint8_t)(a > 254 ? 254 : a); o[2 * i + 1] = (uint8_t)(b > 254 ? 254 : b);
+                }
+            } else {
+                int16_t *o = (int16_t *)(frame + HDR);
+                for (uint32_t i = 0; i < nwords; i++) {
+                    uint32_t w = bank[i] ^ 0x00080200u;
+                    o[2 * i] = (int16_t)((int32_t)(w & 0x3FFu) - 512); o[2 * i + 1] = (int16_t)((int32_t)((w >> 10) & 0x3FFu) - 512);
+                }
             }
             /* restart before the long USB transfer so the timestamps stay honest (the block is idle anyway) */
             wr(SRAM_OWNER, own_run); __asm__ volatile("fence rw,rw" ::: "memory"); t_us = (uint32_t)esp_timer_get_time(); dump_start(ctrl);
-            ok = stream2_write(frame, 16 + nwords * 4, 500000u);
+            ok = stream2_write(frame, HDR + nwords * (web ? 2 : 4), 500000u);
         } else {
             portDISABLE_INTERRUPTS();
             { const volatile uint32_t *src = bank; uint32_t *dst = copy;
@@ -844,8 +860,8 @@ static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t 
             wr(SRAM_OWNER, own_run); __asm__ volatile("fence rw,rw" ::: "memory"); t_us = (uint32_t)esp_timer_get_time(); dump_start(ctrl);
             portENABLE_INTERRUPTS();
             /* header, then decimate into 64-byte chunks that go out while the next block fills */
-            ok = stream2_write(frame, 16, 2000u);
-            uint8_t *o = frame + 16; uint32_t on = 0; const uint32_t *p = copy;
+            ok = stream2_write(frame, HDR, 2000u);
+            uint8_t *o = frame + HDR; uint32_t on = 0; const uint32_t *p = copy;
             for (uint32_t s_ = 0; s_ < nsamp && ok; s_++, p += decim) {
                 uint32_t a = 0, b = 0;
                 for (uint32_t k = 0; k < decim; k += 4) {
@@ -858,7 +874,8 @@ static void stream2(uint32_t ctrl_in, uint32_t nwords, uint32_t decim, uint32_t 
                 if (iv < -128) iv = -128;
                 if (qv > 127) qv = 127;
                 if (qv < -128) qv = -128;
-                o[on++] = (uint8_t)(int8_t)iv; o[on++] = (uint8_t)(int8_t)qv;
+                if (web) { iv += 128; qv += 128; if (iv > 254) iv = 254; if (qv > 254) qv = 254; }
+                o[on++] = (uint8_t)iv; o[on++] = (uint8_t)qv;
                 if (on == 64) { ok = stream2_write(o, 64, 1500u); on = 0; }
             }
             if (ok && on) ok = stream2_write(o, on, 1500u);
@@ -969,8 +986,8 @@ static void handle(char *line)
         char *a = strsep(&s, " "); char *b = s;
         wificnt(a ? strtoul(a, NULL, 10) : 2000, b && *b == '1');
     } else if (!strcmp(cmd, "STREAM2")) {
-        char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = strsep(&s, " "); char *d = strsep(&s, " "); char *e = strsep(&s, " "); char *f = s;
-        stream2(a ? strtoul(a, NULL, 16) : 0x13fffu, b ? strtoul(b, NULL, 10) : 16384u, c ? strtoul(c, NULL, 10) : 64u, d ? strtoul(d, NULL, 10) : 6u, e ? strtoul(e, NULL, 10) : 2000u, f ? strtoul(f, NULL, 10) : 0u);
+        char *a = strsep(&s, " "); char *b = strsep(&s, " "); char *c = strsep(&s, " "); char *d = strsep(&s, " "); char *e = strsep(&s, " "); char *f = strsep(&s, " "); char *g = s;
+        stream2(a ? strtoul(a, NULL, 16) : 0x13fffu, b ? strtoul(b, NULL, 10) : 16384u, c ? strtoul(c, NULL, 10) : 64u, d ? strtoul(d, NULL, 10) : 6u, e ? strtoul(e, NULL, 10) : 2000u, f ? strtoul(f, NULL, 10) : 0u, g && *g == '1');
     } else if (!strcmp(cmd, "OWN")) {
         say("OWN %08" PRIx32 "\r\n", rd(SRAM_OWNER));
     } else {

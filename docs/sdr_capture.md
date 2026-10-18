@@ -65,6 +65,11 @@ Chrome/Edge で開く（file:// で動かない場合は `python3 -m http.server
 - ウォーターフォールの暗い行は未取得時間、ステータスに時間カバー率・欠落・切り捨てを表示。
 検証: `node web/test_dsp.js captures/ble_2426_4M_ev.sigmf-meta`（BLE 復号）、`node web/test_detect.js <sigmf-meta>`（検出・分類）で既存キャプチャに対してブラウザと同じコードを実行できる。
 
+### ブラウザ向けフレーム形式（STREAM2 … web=1, マジック "ESPW"）
+Chrome の WebSerial は termios PARMRK を有効にし、受信データ中の **FF 00 00 をブレークとして 3 バイト捨て、FF FF を 1 バイトに潰す**（chromium `serial_io_handler_posix.cc`）。
+int8 I/Q には −1,0,0 が頻出するため、ブラウザ用フレームは 0xFF を含まない形式にした: ヘッダは "ESPW" ＋ 7 bit 符号化（seq 5 B, t_us 5 B, nsamp 3 B, fmt, flags = 19 B）、
+サンプルは「値＋128」のオフセットバイナリで 254 に飽和（全レート時は 10 bit ≫ 2）。Python 側（"ESPB", int8/int16）はそのまま。接続時・ページ離脱時にストップバイトを送り、取り残しストリームを止める。
+
 ## SoapySDR 連携の設計（未実装）
 - `readStream()` は 1 ブロック = 1 バースト: `SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST` を立て、`timeNs` に t_us 由来の時刻を入れる。ブロック間はサンプルを返さない（ゼロ埋めしない）。
 - 欠落をゼロ埋めして連続に見せるオプションは、復調器が連続データと誤認するため提供しない。必要なら受信側で `END_BURST` を見て明示的に行う。

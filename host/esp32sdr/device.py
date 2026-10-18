@@ -31,7 +31,8 @@ class Device:
     def __init__(self, port=PORT, timeout=2):
         self.s = serial.Serial(port, 115200, timeout=timeout)
         self.s.dtr = True; self.s.rts = False
-        time.sleep(0.2); self.s.reset_input_buffer()
+        time.sleep(0.2)
+        self.s.write(b"x\n"); time.sleep(0.5); self.s.reset_input_buffer()     # stop a stream left running by another client
         self.freq_hz = None; self.alternate = False; self.gain = None
 
     def cmd(self, text, wait=1.0, until=None):
